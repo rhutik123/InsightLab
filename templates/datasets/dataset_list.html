@@ -149,12 +149,12 @@
 <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
     <h3 class="text-base font-semibold text-slate-900">No datasets uploaded yet</h3>
     <p class="mt-1 text-sm text-slate-600 max-w-lg mx-auto">
-        Upload any structured CSV file (at least 2 columns), or download one of our synthetic demonstration datasets below to explore InsightLab.
+        Upload any structured CSV (.csv), Excel (.xlsx, .xls), or JSON (.json) dataset (at least 2 columns and 1 data row), or download one of our synthetic demonstration CSVs below to explore InsightLab.
     </p>
     <div class="mt-6 flex flex-wrap justify-center gap-2.5">
         <a href="{% url 'datasets:upload' %}"
            class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-            Upload your first CSV
+            Upload your first Dataset
         </a>
         <a href="{% url 'datasets:sample_csv' %}?type=traffic"
            class="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">

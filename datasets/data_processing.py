@@ -187,65 +187,106 @@ def _format_excel_cell_value(value):
     return value
 
 
-def _extract_xlsx_sheet_matrix(ws, max_rows=None):
-    """Extract trimmed matrix from an openpyxl read-only worksheet."""
+def _extract_xls_cell(cell, datemode, error_counter=None):
+    """Extract a single xlrd cell into a normalized scalar without executing formulas."""
+    ctype = cell.ctype
+    if ctype in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
+        return None
+    if ctype == xlrd.XL_CELL_DATE:
+        try:
+            dt_val = xlrd.xldate_as_datetime(cell.value, datemode)
+            return _format_excel_cell_value(dt_val)
+        except Exception:
+            return cell.value
+    if ctype == xlrd.XL_CELL_BOOLEAN:
+        return bool(cell.value)
+    if ctype == xlrd.XL_CELL_ERROR:
+        if error_counter is not None:
+            error_counter[0] += 1
+        return None
+    if ctype == xlrd.XL_CELL_NUMBER:
+        val = cell.value
+        if isinstance(val, float) and val.is_integer():
+            return int(val)
+        return _format_excel_cell_value(val)
+    return _format_excel_cell_value(cell.value)
+
+
+class ExcelLimitExceededError(ValueError):
+    """Raised when an Excel worksheet exceeds the maximum supported row or column limit."""
+
+
+def _extract_xlsx_sheet_matrix(ws, sheet_name='Worksheet', max_rows=None, validate_bounds=True):
+    """
+    Extract trimmed matrix from an openpyxl read-only worksheet.
+    Raises ExcelLimitExceededError rather than silently truncating rows or columns.
+    """
     rows = []
-    for row_idx, raw_row in enumerate(ws.iter_rows(values_only=True), start=1):
-        if row_idx > MAX_EXCEL_ROWS:
-            break
+    non_empty_rows = 0
+    for raw_row in ws.iter_rows(values_only=True):
+        if len(raw_row) > MAX_EXCEL_COLS:
+            for extra_cell in raw_row[MAX_EXCEL_COLS:]:
+                if _format_excel_cell_value(extra_cell) is not None:
+                    raise ExcelLimitExceededError(
+                        f'Worksheet "{sheet_name}" exceeds the maximum supported limit of '
+                        f'{MAX_EXCEL_COLS} columns ({MAX_EXCEL_ROWS:,} rows max). '
+                        'Please reduce the column count and upload again.'
+                    )
         converted = [_format_excel_cell_value(cell) for cell in raw_row[:MAX_EXCEL_COLS]]
-        # Trim trailing None values
         while converted and converted[-1] is None:
             converted.pop()
         if any(cell is not None for cell in converted):
-            rows.append(converted)
-            if max_rows and len(rows) >= max_rows:
+            non_empty_rows += 1
+            if non_empty_rows > MAX_EXCEL_ROWS:
+                raise ExcelLimitExceededError(
+                    f'Worksheet "{sheet_name}" exceeds the maximum supported limit of '
+                    f'{MAX_EXCEL_ROWS:,} rows ({MAX_EXCEL_COLS} columns max). '
+                    'Please split the workbook into smaller files and upload again.'
+                )
+            if max_rows is None or len(rows) < max_rows:
+                rows.append(converted)
+            if max_rows is not None and not validate_bounds and len(rows) >= max_rows:
                 break
     return rows
 
 
-def _extract_xls_sheet_matrix(sheet, datemode, max_rows=None):
-    """Extract trimmed matrix from an xlrd worksheet, converting Excel serial dates."""
+def _extract_xls_sheet_matrix(sheet, datemode, sheet_name='Worksheet', max_rows=None, validate_bounds=True):
+    """
+    Extract trimmed matrix from an xlrd worksheet, converting Excel serial dates.
+    Raises ExcelLimitExceededError rather than silently truncating rows or columns.
+    """
     rows = []
-    row_limit = min(sheet.nrows, MAX_EXCEL_ROWS)
-    col_limit = min(sheet.ncols, MAX_EXCEL_COLS)
-    error_cell_count = 0
+    non_empty_rows = 0
+    error_counter = [0]
+    col_cap = min(sheet.ncols, MAX_EXCEL_COLS)
 
-    for r in range(row_limit):
-        converted = []
-        for c in range(col_limit):
-            cell = sheet.cell(r, c)
-            ctype = cell.ctype
-            if ctype in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
-                converted.append(None)
-            elif ctype == xlrd.XL_CELL_DATE:
-                try:
-                    dt_val = xlrd.xldate_as_datetime(cell.value, datemode)
-                    converted.append(_format_excel_cell_value(dt_val))
-                except Exception:
-                    converted.append(cell.value)
-            elif ctype == xlrd.XL_CELL_BOOLEAN:
-                converted.append(bool(cell.value))
-            elif ctype == xlrd.XL_CELL_ERROR:
-                converted.append(None)
-                error_cell_count += 1
-            elif ctype == xlrd.XL_CELL_NUMBER:
-                val = cell.value
-                if isinstance(val, float) and val.is_integer():
-                    converted.append(int(val))
-                else:
-                    converted.append(_format_excel_cell_value(val))
-            else:
-                converted.append(_format_excel_cell_value(cell.value))
+    for r in range(sheet.nrows):
+        if sheet.ncols > MAX_EXCEL_COLS:
+            for c_extra in range(MAX_EXCEL_COLS, sheet.ncols):
+                if _extract_xls_cell(sheet.cell(r, c_extra), datemode) is not None:
+                    raise ExcelLimitExceededError(
+                        f'Worksheet "{sheet_name}" exceeds the maximum supported limit of '
+                        f'{MAX_EXCEL_COLS} columns ({MAX_EXCEL_ROWS:,} rows max). '
+                        'Please reduce the column count and upload again.'
+                    )
 
+        converted = [_extract_xls_cell(sheet.cell(r, c), datemode, error_counter) for c in range(col_cap)]
         while converted and converted[-1] is None:
             converted.pop()
         if any(cell is not None for cell in converted):
-            rows.append(converted)
-            if max_rows and len(rows) >= max_rows:
+            non_empty_rows += 1
+            if non_empty_rows > MAX_EXCEL_ROWS:
+                raise ExcelLimitExceededError(
+                    f'Worksheet "{sheet_name}" exceeds the maximum supported limit of '
+                    f'{MAX_EXCEL_ROWS:,} rows ({MAX_EXCEL_COLS} columns max). '
+                    'Please split the workbook into smaller files and upload again.'
+                )
+            if max_rows is None or len(rows) < max_rows:
+                rows.append(converted)
+            if max_rows is not None and not validate_bounds and len(rows) >= max_rows:
                 break
 
-    return rows, error_cell_count
+    return rows, error_counter[0]
 
 
 def _rows_matrix_to_dataframe(rows):
@@ -353,18 +394,19 @@ def _validate_xlsx_bytes(raw_bytes):
 
         has_usable_sheet = False
         for name in wb.sheetnames:
-            rows = _extract_xlsx_sheet_matrix(wb[name], max_rows=10)
-            if len(rows) >= 2:
+            rows = _extract_xlsx_sheet_matrix(wb[name], sheet_name=name, max_rows=10, validate_bounds=True)
+            if not has_usable_sheet and len(rows) >= 2:
                 df_preview, _ = _rows_matrix_to_dataframe(rows)
                 if len(df_preview.columns) >= 2 and len(df_preview) >= 1:
                     has_usable_sheet = True
-                    break
 
         if not has_usable_sheet:
             return False, (
                 'No usable worksheet found in the .xlsx workbook. Each usable sheet must have at least '
                 '2 columns and 1 data row.'
             )
+    except ExcelLimitExceededError as exc:
+        return False, str(exc)
     except Exception as exc:
         return False, f'Unable to parse .xlsx workbook safely: {exc}'
     finally:
@@ -394,18 +436,21 @@ def _validate_xls_bytes(raw_bytes):
         has_usable_sheet = False
         for idx in range(wb.nsheets):
             sheet = wb.sheet_by_index(idx)
-            rows, _ = _extract_xls_sheet_matrix(sheet, wb.datemode, max_rows=10)
-            if len(rows) >= 2:
+            rows, _ = _extract_xls_sheet_matrix(
+                sheet, wb.datemode, sheet_name=sheet.name, max_rows=10, validate_bounds=True
+            )
+            if not has_usable_sheet and len(rows) >= 2:
                 df_preview, _ = _rows_matrix_to_dataframe(rows)
                 if len(df_preview.columns) >= 2 and len(df_preview) >= 1:
                     has_usable_sheet = True
-                    break
 
         if not has_usable_sheet:
             return False, (
                 'No usable worksheet found in the .xls workbook. Each usable sheet must have at least '
                 '2 columns and 1 data row.'
             )
+    except ExcelLimitExceededError as exc:
+        return False, str(exc)
     except xlrd.XLRDError as exc:
         return False, f'Invalid or unsupported .xls workbook: {exc}'
     except Exception as exc:
@@ -420,61 +465,86 @@ def _validate_xls_bytes(raw_bytes):
     return True, None
 
 
-def _flatten_json_record(record, parent_key='', sep='.', depth=0):
+def _flatten_json_record_items(record, raw_path=(), display_parent='', sep='.', depth=0):
     """
-    Flatten nested JSON objects using dot notation while serializing nested arrays
-    safely as JSON strings so no information is silently dropped.
+    Flatten nested JSON objects into (structural_path_tuple, dotted_name, value) entries.
+    Preserves structural key origin so nested keys vs. literal dotted keys never collide silently.
     """
-    flat = {}
+    items = []
     if not isinstance(record, dict):
-        return flat
+        return items
 
     for key, value in record.items():
         clean_key = str(key).strip() or 'field'
-        full_key = f'{parent_key}{sep}{clean_key}' if parent_key else clean_key
+        struct_path = raw_path + (str(key),)
+        full_key = f'{display_parent}{sep}{clean_key}' if display_parent else clean_key
         if isinstance(value, dict):
             if depth < MAX_JSON_DEPTH and value:
-                nested = _flatten_json_record(value, full_key, sep=sep, depth=depth + 1)
-                flat.update(nested)
+                items.extend(
+                    _flatten_json_record_items(
+                        value,
+                        raw_path=struct_path,
+                        display_parent=full_key,
+                        sep=sep,
+                        depth=depth + 1,
+                    )
+                )
             elif not value:
-                flat[full_key] = None
+                items.append((struct_path, full_key, None))
             else:
-                flat[full_key] = json.dumps(value, ensure_ascii=False)
+                items.append((struct_path, full_key, json.dumps(value, ensure_ascii=False)))
         elif isinstance(value, list):
             if value:
-                flat[full_key] = json.dumps(value, ensure_ascii=False)
+                items.append((struct_path, full_key, json.dumps(value, ensure_ascii=False)))
             else:
-                flat[full_key] = None
+                items.append((struct_path, full_key, None))
         else:
-            flat[full_key] = value
-    return flat
+            items.append((struct_path, full_key, value))
+    return items
 
 
-def _discover_json_candidates_from_obj(parsed_json):
+def _flatten_json_record(record, parent_key='', sep='.', depth=0):
     """
-    Find candidate tabular record sets inside a parsed JSON structure.
-    Returns a list of candidate dicts with raw record lists and structural metadata.
+    Flatten a single JSON object safely without overwriting colliding dotted keys.
+    Returns a flat dictionary with deterministic unique keys.
+    """
+    entries = _flatten_json_record_items(record, display_parent=parent_key, sep=sep, depth=depth)
+    candidate_names = [display_name for _, display_name, _ in entries]
+    unique_names, _ = _sanitize_headers(candidate_names)
+    return {col_name: val for col_name, (_, _, val) in zip(unique_names, entries)}
+
+
+def _discover_json_candidates_with_meta(parsed_json):
+    """
+    Find candidate tabular record sets inside a parsed JSON structure up to MAX_JSON_CANDIDATES.
+    Tracks explicitly whether more than MAX_JSON_CANDIDATES collections exist so users are warned.
     """
     candidates = []
+    state = {'truncated': False, 'omitted_count': 0}
 
     def _walk(node, path='$', depth=0):
-        if len(candidates) >= MAX_JSON_CANDIDATES or depth > MAX_JSON_DEPTH:
+        if depth > MAX_JSON_DEPTH:
             return
         if isinstance(node, list):
             dict_items = [item for item in node if isinstance(item, dict)]
-            if dict_items and len(dict_items) == len(node):
-                candidates.append({
-                    'path': path,
-                    'records': dict_items,
-                    'kind': 'array_of_objects',
-                })
-            elif dict_items and len(dict_items) > 0:
-                candidates.append({
-                    'path': path,
-                    'records': dict_items,
-                    'kind': 'mixed_array_filtered',
-                    'skipped_non_objects': len(node) - len(dict_items),
-                })
+            if dict_items:
+                if len(candidates) >= MAX_JSON_CANDIDATES:
+                    state['truncated'] = True
+                    state['omitted_count'] += 1
+                    return
+                if len(dict_items) == len(node):
+                    candidates.append({
+                        'path': path,
+                        'records': dict_items,
+                        'kind': 'array_of_objects',
+                    })
+                else:
+                    candidates.append({
+                        'path': path,
+                        'records': dict_items,
+                        'kind': 'mixed_array_filtered',
+                        'skipped_non_objects': len(node) - len(dict_items),
+                    })
         elif isinstance(node, dict):
             # Prefer common data wrapper keys first for deterministic ordering
             preferred = ['data', 'records', 'items', 'results', 'rows']
@@ -493,52 +563,89 @@ def _discover_json_candidates_from_obj(parsed_json):
             'kind': 'single_object',
         })
 
-    return candidates
+    return {
+        'candidates': candidates,
+        'truncated': state['truncated'],
+        'max_candidates': MAX_JSON_CANDIDATES,
+        'omitted_count': state['omitted_count'],
+    }
+
+
+def _discover_json_candidates_from_obj(parsed_json):
+    """Return candidate tabular record collections from parsed JSON."""
+    return _discover_json_candidates_with_meta(parsed_json)['candidates']
 
 
 def normalize_json_records(records, extra_notes=None):
-    """Convert a list of JSON record dicts into (DataFrame, notes)."""
+    """
+    Convert a list of JSON record dicts into (DataFrame, notes).
+    Preserves distinct structural paths when nested keys collide with dotted keys.
+    """
     notes = list(extra_notes or [])
-    flattened_rows = [_flatten_json_record(rec) for rec in records if isinstance(rec, dict)]
-    if not flattened_rows:
+    dict_records = [rec for rec in records if isinstance(rec, dict)]
+    if not dict_records:
         return pd.DataFrame(), notes + ['Selected JSON structure contains no object records.']
 
-    all_keys = []
-    seen_keys = set()
     has_nested_dict = any(
         isinstance(v, dict) and bool(v)
-        for rec in records
-        if isinstance(rec, dict)
+        for rec in dict_records
         for v in rec.values()
     )
     has_nested_list = any(
         isinstance(v, list) and bool(v)
-        for rec in records
-        if isinstance(rec, dict)
+        for rec in dict_records
         for v in rec.values()
     )
-    for row in flattened_rows:
-        for k in row.keys():
-            if k not in seen_keys:
-                seen_keys.add(k)
-                all_keys.append(k)
 
-    inconsistent = any(set(row.keys()) != seen_keys for row in flattened_rows)
-    clean_headers, header_notes = _sanitize_headers(all_keys)
+    all_paths = []
+    seen_paths = set()
+    path_to_display = {}
+    flattened_row_maps = []
 
-    aligned_rows = []
-    for row in flattened_rows:
-        aligned_rows.append([row.get(orig_key, None) for orig_key in all_keys])
+    for rec in dict_records:
+        row_map = {}
+        for struct_path, display_name, val in _flatten_json_record_items(rec):
+            row_map[struct_path] = val
+            if struct_path not in seen_paths:
+                seen_paths.add(struct_path)
+                all_paths.append(struct_path)
+                path_to_display[struct_path] = display_name
+        flattened_row_maps.append(row_map)
 
+    inconsistent = any(set(rm.keys()) != seen_paths for rm in flattened_row_maps)
+    raw_display_names = [path_to_display[p] for p in all_paths]
+
+    # Identify exact collisions before header sanitization (e.g. nested vs literal dotted key)
+    seen_display = set()
+    colliding_names = []
+    for name in raw_display_names:
+        if name in seen_display and name not in colliding_names:
+            colliding_names.append(name)
+        seen_display.add(name)
+
+    clean_headers, header_notes = _sanitize_headers(raw_display_names)
+
+    aligned_rows = [
+        [row_map.get(path, None) for path in all_paths]
+        for row_map in flattened_row_maps
+    ]
     df = pd.DataFrame(aligned_rows, columns=clean_headers)
 
     if has_nested_dict:
         notes.append('Nested JSON object properties were flattened using dot notation (e.g., parent.child).')
+    if colliding_names:
+        preview_colliding = ', '.join(f'"{c}"' for c in colliding_names[:5])
+        notes.append(
+            f'Detected flattened JSON column collision(s) on {preview_colliding}; '
+            'preserved all values using deterministic unique column names.'
+        )
     if has_nested_list:
         notes.append('Nested JSON array values within records were preserved as JSON text.')
     if inconsistent:
         notes.append('Inconsistent object keys across records were aligned using null values.')
-    notes.extend(header_notes)
+    for hnote in header_notes:
+        if not (colliding_names and 'duplicate header name' in hnote.lower()):
+            notes.append(hnote)
     return df, notes
 
 
@@ -650,7 +757,19 @@ def inspect_excel_sheets(file_path, source_format='xlsx', preview_rows=5):
             wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
             for sheet_name in wb.sheetnames:
                 ws = wb[sheet_name]
-                rows = _extract_xlsx_sheet_matrix(ws)
+                try:
+                    rows = _extract_xlsx_sheet_matrix(ws, sheet_name=sheet_name)
+                except ExcelLimitExceededError as exc:
+                    summaries.append({
+                        'name': sheet_name,
+                        'row_count': 0,
+                        'column_count': 0,
+                        'headers': [],
+                        'preview_rows': [],
+                        'is_usable': False,
+                        'notes': [str(exc)],
+                    })
+                    continue
                 notes = []
                 if not rows:
                     summaries.append({
@@ -700,7 +819,19 @@ def inspect_excel_sheets(file_path, source_format='xlsx', preview_rows=5):
             wb = xlrd.open_workbook(file_path, on_demand=True)
             for idx in range(wb.nsheets):
                 sheet = wb.sheet_by_index(idx)
-                rows, err_cells = _extract_xls_sheet_matrix(sheet, wb.datemode)
+                try:
+                    rows, err_cells = _extract_xls_sheet_matrix(sheet, wb.datemode, sheet_name=sheet.name)
+                except ExcelLimitExceededError as exc:
+                    summaries.append({
+                        'name': sheet.name,
+                        'row_count': 0,
+                        'column_count': 0,
+                        'headers': [],
+                        'preview_rows': [],
+                        'is_usable': False,
+                        'notes': [str(exc)],
+                    })
+                    continue
                 notes = []
                 if not rows:
                     summaries.append({
@@ -760,7 +891,7 @@ def read_excel_file(file_path, sheet_name=None, source_format='xlsx'):
             target_sheet = sheet_name or (wb.sheetnames[0] if wb.sheetnames else '')
             if target_sheet not in wb.sheetnames:
                 raise ValueError(f'Selected worksheet "{target_sheet}" does not exist in workbook.')
-            rows = _extract_xlsx_sheet_matrix(wb[target_sheet])
+            rows = _extract_xlsx_sheet_matrix(wb[target_sheet], sheet_name=target_sheet)
         finally:
             if wb is not None:
                 try:
@@ -782,7 +913,7 @@ def read_excel_file(file_path, sheet_name=None, source_format='xlsx'):
             if target_sheet not in available_names:
                 raise ValueError(f'Selected worksheet "{target_sheet}" does not exist in workbook.')
             sheet = wb.sheet_by_name(target_sheet)
-            rows, err_cells = _extract_xls_sheet_matrix(sheet, wb.datemode)
+            rows, err_cells = _extract_xls_sheet_matrix(sheet, wb.datemode, sheet_name=target_sheet)
         finally:
             if wb is not None:
                 try:
@@ -803,15 +934,16 @@ def read_excel_file(file_path, sheet_name=None, source_format='xlsx'):
     return df, notes
 
 
-def inspect_json_candidates(file_path, preview_rows=5):
+def inspect_json_structure(file_path, preview_rows=5):
     """
-    Inspect JSON file structure and return candidate tabular record paths with
-    row counts, flattened headers, usability status, notes, and preview rows.
+    Inspect JSON file structure and return a dict containing candidate tabular record paths,
+    truncation metadata when >MAX_JSON_CANDIDATES arrays exist, and preview tables.
     """
     with open(file_path, 'r', encoding='utf-8-sig') as fh:
         parsed = json.load(fh)
 
-    raw_candidates = _discover_json_candidates_from_obj(parsed)
+    discovered = _discover_json_candidates_with_meta(parsed)
+    raw_candidates = discovered['candidates']
     summaries = []
     for cand in raw_candidates:
         extra_notes = []
@@ -842,7 +974,17 @@ def inspect_json_candidates(file_path, preview_rows=5):
             'notes': notes,
         })
 
-    return summaries
+    return {
+        'candidates': summaries,
+        'truncated': discovered['truncated'],
+        'max_candidates': discovered['max_candidates'],
+        'omitted_count': discovered['omitted_count'],
+    }
+
+
+def inspect_json_candidates(file_path, preview_rows=5):
+    """Return candidate tabular record paths from inspect_json_structure."""
+    return inspect_json_structure(file_path, preview_rows=preview_rows)['candidates']
 
 
 def read_json_file(file_path, json_path='$'):

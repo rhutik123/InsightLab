@@ -21,7 +21,7 @@ from .data_processing import (
     generate_sample_traffic_csv_bytes,
     inspect_csv_headers,
     inspect_excel_sheets,
-    inspect_json_candidates,
+    inspect_json_structure,
     normalize_dataset_to_internal_format,
     profile_general_dataset,
     read_excel_file,
@@ -142,16 +142,26 @@ def dataset_upload_view(request):
                     return redirect('datasets:map_columns', pk=dataset.pk)
 
                 if dataset.source_format == 'json':
-                    candidates = inspect_json_candidates(dataset.original_file.path)
+                    json_info = inspect_json_structure(dataset.original_file.path)
+                    candidates = json_info['candidates']
                     usable_cands = [c for c in candidates if c['is_usable']]
                     if not usable_cands:
                         raise ValueError('No usable JSON record array or object was found.')
+                    limit_note = None
+                    if json_info['truncated']:
+                        limit_note = (
+                            f"This JSON file contains {json_info['max_candidates'] + json_info['omitted_count']} "
+                            f"candidate collections; only the first {json_info['max_candidates']} were inspected "
+                            f"({json_info['omitted_count']} additional collection(s) skipped due to safety limit)."
+                        )
                     if len(usable_cands) > 1:
                         _log_activity(
                             request.user,
                             'upload',
                             f'Uploaded multi-array JSON dataset "{dataset.name}".',
                         )
+                        if limit_note:
+                            messages.warning(request, limit_note)
                         messages.info(
                             request,
                             f'JSON file contains {len(usable_cands)} candidate record collections. Select one to import.',
@@ -160,6 +170,9 @@ def dataset_upload_view(request):
 
                     only_cand = usable_cands[0]
                     df, notes = read_json_file(dataset.original_file.path, json_path=only_cand['path'])
+                    if limit_note:
+                        notes.append(limit_note)
+                        messages.warning(request, limit_note)
                     dataset.selected_json_path = only_cand['path']
                     _save_normalized_dataframe(dataset, df, notes)
                     _log_activity(
@@ -264,13 +277,21 @@ def dataset_select_json_view(request, pk):
         return redirect('datasets:map_columns', pk=dataset.pk)
 
     try:
-        candidates = inspect_json_candidates(dataset.original_file.path)
+        json_info = inspect_json_structure(dataset.original_file.path)
+        candidates = json_info['candidates']
     except FileNotFoundError:
         messages.error(request, 'The uploaded JSON file could not be found on disk.')
         return redirect('datasets:list')
     except Exception as exc:
         messages.error(request, f'Unable to inspect JSON structures: {exc}')
         return redirect('datasets:list')
+
+    limit_note = None
+    if json_info['truncated']:
+        limit_note = (
+            f"Safety limit reached: only the first {json_info['max_candidates']} candidate JSON collections "
+            f"were inspected; {json_info['omitted_count']} additional collection(s) were not listed."
+        )
 
     usable_candidates = [c for c in candidates if c['is_usable']]
     if not usable_candidates:
@@ -288,6 +309,8 @@ def dataset_select_json_view(request, pk):
             else:
                 try:
                     df, notes = read_json_file(dataset.original_file.path, json_path=chosen_path)
+                    if limit_note:
+                        notes.append(limit_note)
                     dataset.selected_json_path = chosen_path
                     dataset.is_mapped = False
                     _save_normalized_dataframe(dataset, df, notes)
@@ -318,6 +341,10 @@ def dataset_select_json_view(request, pk):
         'form': form,
         'candidates': candidates,
         'usable_candidates': usable_candidates,
+        'candidates_truncated': json_info['truncated'],
+        'max_candidates': json_info['max_candidates'],
+        'omitted_candidate_count': json_info['omitted_count'],
+        'limit_note': limit_note,
     }
     return render(request, 'datasets/select_json.html', context)
 

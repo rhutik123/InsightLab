@@ -61,12 +61,12 @@ Analysts, small businesses, and researchers often rely on fragmented spreadsheet
 
 InsightLab normalizes Excel and JSON datasets into an internal standardized CSV representation while preserving every original uploaded file untouched (`original_file` / `normalized_file` / `cleaned_file`), allowing all downstream modules (profiling, cleaning, exploration, analytics, anomaly detection, forecasting, and PDF reporting) to operate on one shared pipeline:
 
-| Format | Extension | Ingestion Library | Multi-Structure Handling &amp; Notes |
+| Format | Extension | Ingestion Library | Multi-Structure Handling &amp; Limits |
 |---|---|---|---|
-| **CSV** | `.csv` | Pandas (`utf-8-sig` / `latin-1`) | Direct tabular text ingestion; minimum 2 columns and 1 data row. |
-| **Excel** | `.xlsx` | `openpyxl` (`read_only=True`, `data_only=True`) | Single usable sheet auto-selects; multi-sheet workbooks prompt sheet selection with preview. Reads cached formula values safely without executing macros. |
-| **Legacy Excel** | `.xls` | `xlrd` | Single usable sheet auto-selects; multi-sheet workbooks prompt sheet selection; converts Excel serial dates automatically. |
-| **JSON** | `.json` | Python stdlib `json` | Supports arrays of objects, wrapper keys (`data`, `records`, `items`, `results`), single objects (1-row table), and multi-array selection. Flattens nested objects with dot notation and serializes nested arrays safely as JSON text. |
+| **CSV** | `.csv` | Pandas (`utf-8-sig` / `latin-1`) | Direct tabular text ingestion; minimum 2 columns and 1 data row; up to 15 MB. |
+| **Excel** | `.xlsx` | `openpyxl` (`read_only=True`, `data_only=True`) | Single usable sheet auto-selects; multi-sheet workbooks prompt sheet selection with preview. Reads cached formula values without executing macros. Limits: 15 MB upload, 50 MB uncompressed XML / 500 entries, **200,000 rows &amp; 250 columns** per sheet (oversized sheets are rejected cleanly rather than truncated). |
+| **Legacy Excel** | `.xls` | `xlrd` | Single usable sheet auto-selects; multi-sheet workbooks prompt sheet selection; converts Excel serial dates automatically. Limits: 15 MB upload, **200,000 rows &amp; 250 columns** per sheet (oversized sheets are rejected cleanly). |
+| **JSON** | `.json` | Python stdlib `json` | Supports arrays of objects, wrapper keys (`data`, `records`, `items`, `results`, `rows`), single objects (1-row table), and interactive multi-array selection. Flattens nested objects with dot notation (deduplicating nested-vs-dotted key collisions safely), serializes nested arrays as JSON text, and inspects up to **25 candidate collections** (depth &le; 12), warning explicitly when additional collections exist. |
 
 > **Unsupported formats:** Macro-enabled Excel (`.xlsm`), JSON Lines (`.jsonl`), Parquet, and XML are rejected with clear validation errors. Encrypted or password-protected Excel workbooks and formula cells lacking cached values cannot be evaluated by the server.
 
@@ -88,7 +88,7 @@ Domain & ML Modules (data_processing.py, analysis.py, decision_support.py,
                      research.py, report_generator.py)
    │
    ▼
-SQLite / PostgreSQL (Django ORM)  +  Local Media Storage (Original CSV, Cleaned CSV, PDFs)
+SQLite (Django ORM)  +  Local Media Storage (Original Uploads, Normalized CSVs, Cleaned CSVs, PDFs)
 ```
 
 ---
@@ -96,22 +96,22 @@ SQLite / PostgreSQL (Django ORM)  +  Local Media Storage (Original CSV, Cleaned 
 ## Project Folder Structure
 
 ```text
-sales_forecasting/
+insightlab/
 ├── manage.py
-├── requirements.txt
-├── .env.example
+├── requirements.txt         # UTF-8 pinned dependencies (including openpyxl & xlrd)
+├── .env.example             # Reference list of supported OS environment variables
 ├── .gitignore
 ├── README.md
 ├── PROJECT_PROGRESS.md
 ├── config/                  # Settings, root URLs, WSGI/ASGI
 ├── accounts/                # Auth forms, views, URLs, tests
-├── datasets/                # SalesDataset & WorkspaceActivity models, schema detection, profiling, cleaning, explorer
+├── datasets/                # SalesDataset & WorkspaceActivity models, multi-format ingestion, profiling, cleaning, explorer
 ├── analytics/               # Dashboard, general EDA, custom visualizations, anomaly detection, decision support
 ├── forecasting/             # ForecastExperiment model, chronological preprocessing, 5 models, metrics, Experiment Lab
 ├── reports/                 # GeneratedReport model, ReportLab + Matplotlib PDF builder
 ├── templates/               # Modular Django HTML templates (no frontend JS frameworks)
 ├── static/                  # Tailwind source/output CSS, vanilla app.js, local Chart.js bundle
-└── docs/                    # Technical architecture & reference documentation PDF
+└── docs/                    # Archived baseline PDF documentation (reflects pre-extension 20-test CSV snapshot)
 ```
 
 ---
@@ -155,8 +155,16 @@ All 6 academic protocols preserve chronological ordering and store random seeds 
    ```powershell
    pip install -r requirements.txt
    ```
-3. **Configure environment variables:**
-   Copy `.env.example` to `.env` (for local `DEBUG=True` development, `config/settings.py` automatically generates a gitignored `.dev_secret_key` if `DJANGO_SECRET_KEY` is unset; in production set `DJANGO_DEBUG=False` and `DJANGO_SECRET_KEY`).
+3. **Configure environment variables (OS / Terminal Session):**
+   `config/settings.py` reads environment variables directly from the operating system process environment (`.env` files are **not** loaded automatically). See `.env.example` for supported keys:
+   - Local development (`DEBUG=True` default): if `DJANGO_SECRET_KEY` is unset, `config/settings.py` generates a gitignored `.dev_secret_key` automatically.
+   - Production (`DJANGO_DEBUG=False`): export the variables in your PowerShell session or hosting platform before launching Django:
+     ```powershell
+     $env:DJANGO_DEBUG = "False"
+     $env:DJANGO_SECRET_KEY = "replace-with-a-long-random-secret-key"
+     $env:DJANGO_ALLOWED_HOSTS = "localhost,127.0.0.1"
+     ```
+   SQLite (`db.sqlite3`) is used by default; PostgreSQL database settings are not yet wired into `config/settings.py`.
 4. **Apply database migrations:**
    ```powershell
    python manage.py migrate
@@ -175,7 +183,7 @@ All 6 academic protocols preserve chronological ordering and store random seeds 
   .\.venv\Scripts\python.exe manage.py runserver
   ```
   Visit `http://127.0.0.1:8000/`.
-- **Run all automated tests (27 tests across all 5 apps):**
+- **Run all automated tests (31 tests across all 5 apps):**
   ```powershell
   .\.venv\Scripts\python.exe manage.py test -v 2
   ```
@@ -185,7 +193,7 @@ All 6 academic protocols preserve chronological ordering and store random seeds 
 ## Usage & Sample Datasets
 
 1. Register an account and sign in.
-2. Open **My Datasets** and either upload your own `.csv`, `.xlsx`, `.xls`, or `.json` file (minimum 2 columns, up to 15 MB) or download one of the built-in synthetic test datasets:
+2. Open **My Datasets** and either upload your own `.csv`, `.xlsx`, `.xls`, or `.json` file (minimum 2 columns and 1 data row, up to 15 MB) or download one of the built-in synthetic test CSV datasets:
    - **Sample Sales CSV** (`/datasets/sample-csv/?type=sales`)
    - **Sample Website Traffic CSV** (`/datasets/sample-csv/?type=traffic`)
    - **Sample Business Expenses CSV** (`/datasets/sample-csv/?type=expenses`)
@@ -196,7 +204,8 @@ All 6 academic protocols preserve chronological ordering and store random seeds 
 ## Current Limitations
 
 - Supports `.csv`, `.xlsx`, `.xls`, and `.json` files up to 15 MB (`.xlsm`, `.jsonl`, Parquet, XML, and encrypted/password-protected Excel workbooks are not supported).
-- Excel formula cells are read strictly using cached values (`data_only=True`, no macro or formula execution); formulas saved without cached values import as missing with an ingestion warning.
+- Excel worksheets are capped at **200,000 non-empty rows** and **250 columns** per sheet (larger sheets are rejected clearly rather than truncated). Formula cells are read strictly using cached values (`data_only=True`, no macro or formula execution); formulas saved without cached values import as missing with an ingestion warning.
+- JSON collection discovery inspects up to **25 candidate record arrays** (nesting depth &le; 12) and warns explicitly when additional collections are not inspected.
 - Time-series forecasting requires a mapped date/time column and at least 8 continuous periods for chronological train/test evaluation.
 - Model comparison highlights empirical error differences on the tested split without claiming formal statistical significance across multiple datasets.
 - Decision-support notes label capacity/inventory advice as planning suggestions because stock-on-hand and supplier lead-time tables are not part of dataset uploads.
@@ -206,4 +215,4 @@ All 6 academic protocols preserve chronological ordering and store random seeds 
 - Optional Parquet / JSON Lines (`.jsonl`) ingestion support.
 - Optional gradient boosting models (e.g., XGBoost / LightGBM) and SARIMAX exogenous regressors.
 - Formal statistical significance tests (e.g., Diebold–Mariano / Wilcoxon signed-rank) across benchmark suites.
-- Production deployment configuration with PostgreSQL, Gunicorn/WhiteNoise, and HTTPS.
+- Production PostgreSQL configuration (`DATABASES`), Gunicorn/WhiteNoise static serving, and HTTPS deployment settings.

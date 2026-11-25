@@ -18,6 +18,12 @@
             </span>
         </div>
 
+        {% if candidates_truncated and limit_note %}
+        <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+            <strong>Collection Limit Notice:</strong> {{ limit_note }}
+        </div>
+        {% endif %}
+
         <form method="post" class="mt-6 space-y-4">
             {% csrf_token %}
             <div class="space-y-3">

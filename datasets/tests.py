@@ -11,6 +11,7 @@ import os
 import shutil
 import struct
 import tempfile
+from unittest import mock
 import zipfile
 
 import openpyxl
@@ -22,6 +23,7 @@ from django.urls import reverse
 from reports.models import GeneratedReport
 
 from .data_processing import (
+    ExcelLimitExceededError,
     clean_dataset_dataframe,
     clean_general_dataframe,
     detect_column_schema,
@@ -30,6 +32,8 @@ from .data_processing import (
     generate_sample_traffic_csv_bytes,
     inspect_excel_sheets,
     inspect_json_candidates,
+    inspect_json_structure,
+    normalize_json_records,
     profile_dataset,
     profile_general_dataset,
     read_excel_file,
@@ -723,3 +727,133 @@ class MultiFormatEndToEndIntegrationTests(TestCase):
                 },
             )
             self._verify_downstream_pipeline(json_ds)
+
+
+class TargetedBugFixRegressionTests(TestCase):
+    """Focused regression tests for Excel limit enforcement, JSON collisions, >25 arrays, and original-file preservation."""
+
+    def setUp(self):
+        self.temp_media = tempfile.mkdtemp()
+        self.user = User.objects.create_user(username='regression_user', password='StrongPassword!123')
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_media, ignore_errors=True)
+
+    def test_excel_row_and_column_limits_reject_instead_of_truncating(self):
+        # 1. Column limit > 250 columns in .xlsx rejected cleanly (real 251-col workbook)
+        wide_headers = [f'col_{i}' for i in range(251)]
+        wide_row = list(range(251))
+        wide_xlsx = build_test_xlsx_bytes([('WideSheet', [wide_headers, wide_row])])
+        ok, err, fmt = validate_uploaded_dataset(SimpleUploadedFile('wide.xlsx', wide_xlsx))
+        self.assertFalse(ok)
+        self.assertEqual(fmt, 'xlsx')
+        self.assertIn('250 columns', err)
+        self.assertIn('200,000 rows', err)
+
+        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
+            tmp.write(wide_xlsx)
+            wide_path = tmp.name
+        try:
+            with self.assertRaises(ExcelLimitExceededError):
+                read_excel_file(wide_path, sheet_name='WideSheet', source_format='xlsx')
+        finally:
+            if os.path.exists(wide_path):
+                os.remove(wide_path)
+
+        # 2. Row limit enforcement in both .xlsx and .xls (patched threshold for fast test execution)
+        seven_rows = [['date', 'val']] + [[f'2025-01-0{i}', i * 10] for i in range(1, 7)]
+        xlsx_7 = build_test_xlsx_bytes([('TallSheet', seven_rows)])
+        xls_7 = build_test_xls_bytes([('TallSheet', seven_rows)])
+        with mock.patch('datasets.data_processing.MAX_EXCEL_ROWS', 5):
+            ok_x, err_x, _ = validate_uploaded_dataset(SimpleUploadedFile('tall.xlsx', xlsx_7))
+            self.assertFalse(ok_x)
+            self.assertIn('exceeds the maximum supported limit of 5 rows', err_x)
+
+            ok_l, err_l, _ = validate_uploaded_dataset(SimpleUploadedFile('tall.xls', xls_7))
+            self.assertFalse(ok_l)
+            self.assertIn('exceeds the maximum supported limit of 5 rows', err_l)
+
+    def test_json_flattened_column_collision_preserves_all_values(self):
+        records = [
+            {'metrics': {'visitors': 10}, 'metrics.visitors': 99, 'date': '2025-01-01'},
+            {'metrics.visitors': 88, 'metrics': {'visitors': 20}, 'date': '2025-01-02'},
+        ]
+        df, notes = normalize_json_records(records)
+        self.assertEqual(list(df.columns), ['metrics.visitors', 'metrics.visitors_2', 'date'])
+        self.assertEqual(df.iloc[0]['metrics.visitors'], 10)
+        self.assertEqual(df.iloc[0]['metrics.visitors_2'], 99)
+        self.assertEqual(df.iloc[1]['metrics.visitors'], 20)
+        self.assertEqual(df.iloc[1]['metrics.visitors_2'], 88)
+        self.assertTrue(any('collision' in n.lower() for n in notes))
+
+    def test_json_over_25_candidate_collections_notifies_user_and_preserves_original(self):
+        payload = {
+            f'collection_{i:02d}': [
+                {'date': '2025-01-01', 'value': i * 10},
+                {'date': '2025-01-02', 'value': i * 12},
+            ]
+            for i in range(1, 29)
+        }
+        raw_bytes = json.dumps(payload).encode('utf-8')
+
+        with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as tmp:
+            tmp.write(raw_bytes)
+            json_path = tmp.name
+        try:
+            info = inspect_json_structure(json_path)
+            self.assertEqual(len(info['candidates']), 25)
+            self.assertTrue(info['truncated'])
+            self.assertEqual(info['omitted_count'], 3)
+        finally:
+            if os.path.exists(json_path):
+                os.remove(json_path)
+
+        with override_settings(MEDIA_ROOT=self.temp_media):
+            self.client.login(username='regression_user', password='StrongPassword!123')
+            up = SimpleUploadedFile('many_arrays.json', raw_bytes)
+            res = self.client.post(
+                reverse('datasets:upload'),
+                {'name': 'Many JSON Arrays', 'original_file': up},
+            )
+            dataset = SalesDataset.objects.get(name='Many JSON Arrays')
+            self.assertRedirects(res, reverse('datasets:select_json', args=[dataset.pk]))
+
+            sel_get = self.client.get(reverse('datasets:select_json', args=[dataset.pk]))
+            self.assertContains(sel_get, 'Collection Limit Notice')
+            self.assertContains(sel_get, '25')
+
+            self.client.post(
+                reverse('datasets:select_json', args=[dataset.pk]),
+                {'json_path': 'collection_01'},
+            )
+            dataset.refresh_from_db()
+            self.assertTrue(any('25' in n for n in dataset.ingestion_notes))
+            with open(dataset.original_file.path, 'rb') as fh:
+                self.assertEqual(fh.read(), raw_bytes)
+
+    def test_xlsx_original_preserved_and_upload_templates_reflect_multiformat(self):
+        with override_settings(MEDIA_ROOT=self.temp_media):
+            self.client.login(username='regression_user', password='StrongPassword!123')
+
+            # Empty dataset list and upload page wording
+            list_res = self.client.get(reverse('datasets:list'))
+            self.assertEqual(list_res.status_code, 200)
+            self.assertContains(list_res, 'Upload your first Dataset')
+            self.assertNotContains(list_res, 'Upload your first CSV')
+            self.assertNotContains(list_res, 'Upload any structured CSV file')
+
+            upload_res = self.client.get(reverse('datasets:upload'))
+            self.assertEqual(upload_res.status_code, 200)
+            self.assertContains(upload_res, '.csv,.xlsx,.xls,.json')
+
+            # Original XLSX bytes preserved untouched across upload, normalization, mapping & cleaning
+            rows = [['Date', 'Metric'], ['2025-01-01', 10], ['2025-01-02', 20], ['2025-01-03', 30]]
+            xlsx_bytes = build_test_xlsx_bytes([('Sheet1', rows)])
+            res = self.client.post(
+                reverse('datasets:upload'),
+                {'name': 'Preserved XLSX', 'original_file': SimpleUploadedFile('preserve.xlsx', xlsx_bytes)},
+            )
+            ds = SalesDataset.objects.get(name='Preserved XLSX')
+            self.assertRedirects(res, reverse('datasets:map_columns', args=[ds.pk]))
+            with open(ds.original_file.path, 'rb') as fh:
+                self.assertEqual(fh.read(), xlsx_bytes)
