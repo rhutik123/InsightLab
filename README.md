@@ -2,7 +2,7 @@
 
 **Tagline:** *Transform Data into Meaningful Insights.*
 
-InsightLab is a web-based data analytics and predictive intelligence platform built with Django, Python, Tailwind CSS, Chart.js, Pandas, Scikit-learn, Statsmodels, Matplotlib, and ReportLab. It enables users to upload, profile, clean, explore, visualize, and analyze structured CSV datasets, detect statistical anomalies, train and compare time-series forecasting models, conduct reproducible ML experiments, and export analytical PDF reports.
+InsightLab is a web-based data analytics and predictive intelligence platform built with Django, Python, Tailwind CSS, Chart.js, Pandas, Scikit-learn, Statsmodels, Matplotlib, and ReportLab. It enables users to upload, validate, normalize, profile, clean, explore, visualize, and analyze structured **CSV (`.csv`)**, **Excel (`.xlsx`, `.xls`)**, and **JSON (`.json`)** datasets, detect statistical anomalies, train and compare time-series forecasting models, conduct reproducible ML experiments, and export analytical PDF reports.
 
 ---
 
@@ -22,7 +22,7 @@ Analysts, small businesses, and researchers often rely on fragmented spreadsheet
 
 ## Project Objectives
 
-1. Support uploading and automatic schema detection (`datetime`, `numeric`, `categorical`, `text`, `identifier`) for arbitrary structured CSV datasets.
+1. Support uploading, safe parsing, normalization, and automatic schema detection (`datetime`, `numeric`, `categorical`, `text`, `identifier`) for arbitrary structured `.csv`, `.xlsx`, `.xls`, and `.json` datasets.
 2. Profile datasets automatically for completeness, duplicates, distributions, descriptive statistics, and extreme outliers.
 3. Provide non-destructive, preview-before-apply data cleaning that preserves original uploaded files unchanged.
 4. Deliver interactive Exploratory Data Analysis (EDA), custom visualizations, and statistical Z-score anomaly detection.
@@ -36,7 +36,7 @@ Analysts, small businesses, and researchers often rely on fragmented spreadsheet
 ## Main Features
 
 - **Workspace & Authentication (`accounts`):** Registration, login with open-redirect protection, POST-only logout, Django password validation, profile updates, password changes, and strict per-user data ownership isolation.
-- **Dataset Management & Schema Mapping (`datasets`):** CSV upload validation (extension, size, empty/NUL-byte checks), automatic column-type detection, flexible role mapping (optional Date & Category columns), automated profiling, and 3 synthetic sample CSV downloads (`sales`, `traffic`, `expenses`).
+- **Dataset Management & Multi-Format Ingestion (`datasets`):** Unified upload validation across CSV (`.csv`), Excel (`.xlsx`, `.xls`), and JSON (`.json`) up to 15 MB (extension, file signature/archive inspection, zip-bomb & encryption guards, no macro/formula execution), interactive worksheet selector for multi-sheet Excel workbooks, JSON path selector + dot-notation object flattening, automatic column-type detection, flexible role mapping, automated profiling, and 3 synthetic sample CSV downloads (`sales`, `traffic`, `expenses`).
 - **Data Explorer & Non-Destructive Cleaning (`datasets`):** Searchable row/column explorer (`/datasets/explorer/`) plus preview-before-apply cleaning (`/datasets/cleaning/`) supporting deduplication, date validation, negative-value filtering, numeric/categorical missing-value strategies, and optional aggregation.
 - **Exploratory Data Analysis (`analytics`):** Dynamic KPI summaries, daily/weekly/monthly/yearly trends (with sufficiency guards), segment breakdowns, Pearson correlations, distribution histograms, day-of-week patterns, and 7-day seasonal decomposition (`statsmodels`).
 - **Visualization Studio (`analytics`):** Interactive custom Chart.js builder (`/analytics/visualizations/`) supporting Line, Bar, Distribution Histogram, and 2-variable Scatter plots across any uploaded dataset.
@@ -52,8 +52,23 @@ Analysts, small businesses, and researchers often rely on fragmented spreadsheet
 - **Backend:** Python 3.15, Django 6.1.3, Django ORM
 - **Database:** SQLite (default development), PostgreSQL-compatible via Django migrations
 - **Frontend:** Django Templates (HTML5), Tailwind CSS v4.3.5 (compiled locally via `pytailwindcss`), Vanilla JavaScript, Chart.js v4.4.7 (local UMD bundle)
-- **Data Science & ML:** Pandas 3.1.1, NumPy 2.5.5, Scikit-learn 1.9.1, Statsmodels 0.15.0, SciPy 1.18.1
+- **Data Science & ML:** Pandas 3.1.1, NumPy 2.5.5, Scikit-learn 1.9.1, Statsmodels 0.15.0, SciPy 1.18.1, `openpyxl` 3.1.5 (`.xlsx`), `xlrd` 2.0.2 (`.xls`), stdlib `json`
 - **Visualization & Reporting:** Matplotlib 3.11.2, ReportLab 5.1.1
+
+---
+
+## Supported File Formats
+
+InsightLab normalizes Excel and JSON datasets into an internal standardized CSV representation while preserving every original uploaded file untouched (`original_file` / `normalized_file` / `cleaned_file`), allowing all downstream modules (profiling, cleaning, exploration, analytics, anomaly detection, forecasting, and PDF reporting) to operate on one shared pipeline:
+
+| Format | Extension | Ingestion Library | Multi-Structure Handling &amp; Notes |
+|---|---|---|---|
+| **CSV** | `.csv` | Pandas (`utf-8-sig` / `latin-1`) | Direct tabular text ingestion; minimum 2 columns and 1 data row. |
+| **Excel** | `.xlsx` | `openpyxl` (`read_only=True`, `data_only=True`) | Single usable sheet auto-selects; multi-sheet workbooks prompt sheet selection with preview. Reads cached formula values safely without executing macros. |
+| **Legacy Excel** | `.xls` | `xlrd` | Single usable sheet auto-selects; multi-sheet workbooks prompt sheet selection; converts Excel serial dates automatically. |
+| **JSON** | `.json` | Python stdlib `json` | Supports arrays of objects, wrapper keys (`data`, `records`, `items`, `results`), single objects (1-row table), and multi-array selection. Flattens nested objects with dot notation and serializes nested arrays safely as JSON text. |
+
+> **Unsupported formats:** Macro-enabled Excel (`.xlsm`), JSON Lines (`.jsonl`), Parquet, and XML are rejected with clear validation errors. Encrypted or password-protected Excel workbooks and formula cells lacking cached values cannot be evaluated by the server.
 
 ---
 
@@ -160,7 +175,7 @@ All 6 academic protocols preserve chronological ordering and store random seeds 
   .\.venv\Scripts\python.exe manage.py runserver
   ```
   Visit `http://127.0.0.1:8000/`.
-- **Run all automated tests (20 tests across all 5 apps):**
+- **Run all automated tests (27 tests across all 5 apps):**
   ```powershell
   .\.venv\Scripts\python.exe manage.py test -v 2
   ```
@@ -170,24 +185,25 @@ All 6 academic protocols preserve chronological ordering and store random seeds 
 ## Usage & Sample Datasets
 
 1. Register an account and sign in.
-2. Open **My Datasets** and either upload your own `.csv` file (minimum 2 columns) or download one of the built-in synthetic test datasets:
+2. Open **My Datasets** and either upload your own `.csv`, `.xlsx`, `.xls`, or `.json` file (minimum 2 columns, up to 15 MB) or download one of the built-in synthetic test datasets:
    - **Sample Sales CSV** (`/datasets/sample-csv/?type=sales`)
    - **Sample Website Traffic CSV** (`/datasets/sample-csv/?type=traffic`)
    - **Sample Business Expenses CSV** (`/datasets/sample-csv/?type=expenses`)
-3. Confirm the auto-detected column schema and explore your data in **Profile**, **Data Explorer**, **Data Cleaning**, **Data Analysis**, **Visualizations**, **Anomaly Detection**, **Forecasting**, **Experiment Lab**, **Model Comparison**, and **Reports**.
+3. For multi-sheet Excel workbooks or multi-array JSON files, select the worksheet or JSON path from the live preview; then confirm the auto-detected column schema and explore your data in **Profile**, **Data Explorer**, **Data Cleaning**, **Data Analysis**, **Visualizations**, **Anomaly Detection**, **Forecasting**, **Experiment Lab**, **Model Comparison**, and **Reports**.
 
 ---
 
 ## Current Limitations
 
-- Supports `.csv` files up to 15 MB (Excel `.xlsx` and Parquet ingestion are not yet implemented).
+- Supports `.csv`, `.xlsx`, `.xls`, and `.json` files up to 15 MB (`.xlsm`, `.jsonl`, Parquet, XML, and encrypted/password-protected Excel workbooks are not supported).
+- Excel formula cells are read strictly using cached values (`data_only=True`, no macro or formula execution); formulas saved without cached values import as missing with an ingestion warning.
 - Time-series forecasting requires a mapped date/time column and at least 8 continuous periods for chronological train/test evaluation.
 - Model comparison highlights empirical error differences on the tested split without claiming formal statistical significance across multiple datasets.
-- Decision-support notes label capacity/inventory advice as planning suggestions because stock-on-hand and supplier lead-time tables are not part of CSV uploads.
+- Decision-support notes label capacity/inventory advice as planning suggestions because stock-on-hand and supplier lead-time tables are not part of dataset uploads.
 
 ## Future Enhancements
 
-- Excel (`.xlsx`) and multi-sheet ingestion support.
+- Optional Parquet / JSON Lines (`.jsonl`) ingestion support.
 - Optional gradient boosting models (e.g., XGBoost / LightGBM) and SARIMAX exogenous regressors.
 - Formal statistical significance tests (e.g., Diebold–Mariano / Wilcoxon signed-rank) across benchmark suites.
 - Production deployment configuration with PostgreSQL, Gunicorn/WhiteNoise, and HTTPS.

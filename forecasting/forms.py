@@ -35,8 +35,8 @@ class ForecastRunForm(forms.Form):
     ]
 
     VERSION_CHOICES = [
-        ('cleaned', 'Use Cleaned Version (if available)'),
-        ('original', 'Use Original Uploaded Version'),
+        ('cleaned', 'Cleaned (if available)'),
+        ('original', 'Original Uploaded'),
     ]
 
     dataset = forms.ModelChoiceField(queryset=SalesDataset.objects.none(), label='Dataset')

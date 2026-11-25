@@ -1,6 +1,7 @@
 """
-Views for CSV upload, flexible schema mapping, profiling, data exploration,
-non-destructive cleaning, deletion, and synthetic sample downloads.
+Views for multi-format dataset upload (CSV, XLSX, XLS, JSON), worksheet/JSON path
+selection, flexible schema mapping, profiling, data exploration, non-destructive
+cleaning, deletion, and synthetic sample downloads.
 """
 
 from pathlib import Path
@@ -19,17 +20,50 @@ from .data_processing import (
     generate_sample_sales_csv_bytes,
     generate_sample_traffic_csv_bytes,
     inspect_csv_headers,
-    load_general_dataframe,
+    inspect_excel_sheets,
+    inspect_json_candidates,
+    normalize_dataset_to_internal_format,
     profile_general_dataset,
+    read_excel_file,
+    read_json_file,
     read_raw_csv,
+    sanitize_original_filename,
 )
-from .forms import ColumnMappingForm, DataCleaningForm, DatasetUploadForm
+from .forms import (
+    ColumnMappingForm,
+    DataCleaningForm,
+    DatasetUploadForm,
+    JsonPathSelectionForm,
+    SheetSelectionForm,
+)
 from .models import SalesDataset, WorkspaceActivity
 
 
 def _log_activity(user, action_type, message):
     """Record a workspace activity item for the dashboard feed."""
     WorkspaceActivity.objects.create(user=user, action_type=action_type, message=message)
+
+
+def _save_normalized_dataframe(dataset, df, notes):
+    """Normalize ingested DataFrame into UTF-8 CSV stored in dataset.normalized_file."""
+    csv_bytes, normalized_filename = normalize_dataset_to_internal_format(
+        df, dataset.original_filename or dataset.name
+    )
+    if dataset.normalized_file:
+        dataset.normalized_file.delete(save=False)
+    dataset.normalized_file.save(normalized_filename, ContentFile(csv_bytes), save=False)
+    dataset.ingestion_notes = list(notes or [])
+    dataset.save()
+
+
+def _redirect_if_selection_pending(dataset):
+    """Redirect to worksheet or JSON path selection if normalization is still pending."""
+    if dataset.needs_structure_selection:
+        if dataset.source_format in ('xlsx', 'xls'):
+            return redirect('datasets:select_sheet', pk=dataset.pk)
+        if dataset.source_format == 'json':
+            return redirect('datasets:select_json', pk=dataset.pk)
+    return None
 
 
 @login_required
@@ -46,42 +80,263 @@ def dataset_list_view(request):
 
 @login_required
 def dataset_upload_view(request):
-    """Handle CSV upload and redirect to the schema/column-mapping step."""
+    """Handle CSV, Excel (.xlsx/.xls), and JSON uploads and route into normalization/mapping."""
     if request.method == 'POST':
         form = DatasetUploadForm(request.POST, request.FILES)
         if form.is_valid():
+            uploaded = request.FILES['original_file']
             dataset = form.save(commit=False)
             dataset.user = request.user
-            dataset.file_size_bytes = request.FILES['original_file'].size
+            dataset.source_format = form.detected_format or 'csv'
+            dataset.original_filename = sanitize_original_filename(uploaded.name)
+            dataset.file_size_bytes = uploaded.size
             dataset.save()
-            _log_activity(request.user, 'upload', f'Uploaded dataset "{dataset.name}".')
-            messages.success(
-                request,
-                'CSV uploaded. Review the automatically detected column types and role mapping below.',
-            )
-            return redirect('datasets:map_columns', pk=dataset.pk)
+
+            try:
+                if dataset.source_format == 'csv':
+                    _log_activity(request.user, 'upload', f'Uploaded CSV dataset "{dataset.name}".')
+                    messages.success(
+                        request,
+                        'CSV uploaded. Review the automatically detected column types and role mapping below.',
+                    )
+                    return redirect('datasets:map_columns', pk=dataset.pk)
+
+                if dataset.source_format in ('xlsx', 'xls'):
+                    sheets = inspect_excel_sheets(dataset.original_file.path, source_format=dataset.source_format)
+                    usable_sheets = [s for s in sheets if s['is_usable']]
+                    if not usable_sheets:
+                        raise ValueError('No usable tabular worksheets were found in this Excel workbook.')
+                    if len(usable_sheets) > 1:
+                        _log_activity(
+                            request.user,
+                            'upload',
+                            f'Uploaded multi-sheet {dataset.source_format.upper()} workbook "{dataset.name}".',
+                        )
+                        messages.info(
+                            request,
+                            f'Workbook contains {len(usable_sheets)} usable worksheets. Select which sheet to import.',
+                        )
+                        return redirect('datasets:select_sheet', pk=dataset.pk)
+
+                    only_sheet = usable_sheets[0]['name']
+                    df, notes = read_excel_file(
+                        dataset.original_file.path,
+                        sheet_name=only_sheet,
+                        source_format=dataset.source_format,
+                    )
+                    if len(sheets) > 1:
+                        notes.append(
+                            f'Skipped {len(sheets) - 1} empty or non-tabular worksheet(s) and auto-selected "{only_sheet}".'
+                        )
+                    dataset.selected_sheet = only_sheet
+                    _save_normalized_dataframe(dataset, df, notes)
+                    _log_activity(
+                        request.user,
+                        'upload',
+                        f'Uploaded {dataset.source_format.upper()} dataset "{dataset.name}" (sheet: {only_sheet}).',
+                    )
+                    messages.success(
+                        request,
+                        f'Excel sheet "{only_sheet}" normalized safely ({len(df)} rows). Review column mapping below.',
+                    )
+                    return redirect('datasets:map_columns', pk=dataset.pk)
+
+                if dataset.source_format == 'json':
+                    candidates = inspect_json_candidates(dataset.original_file.path)
+                    usable_cands = [c for c in candidates if c['is_usable']]
+                    if not usable_cands:
+                        raise ValueError('No usable JSON record array or object was found.')
+                    if len(usable_cands) > 1:
+                        _log_activity(
+                            request.user,
+                            'upload',
+                            f'Uploaded multi-array JSON dataset "{dataset.name}".',
+                        )
+                        messages.info(
+                            request,
+                            f'JSON file contains {len(usable_cands)} candidate record collections. Select one to import.',
+                        )
+                        return redirect('datasets:select_json', pk=dataset.pk)
+
+                    only_cand = usable_cands[0]
+                    df, notes = read_json_file(dataset.original_file.path, json_path=only_cand['path'])
+                    dataset.selected_json_path = only_cand['path']
+                    _save_normalized_dataframe(dataset, df, notes)
+                    _log_activity(
+                        request.user,
+                        'upload',
+                        f'Uploaded JSON dataset "{dataset.name}" (path: {only_cand["path"]}).',
+                    )
+                    messages.success(
+                        request,
+                        f'JSON data normalized safely ({len(df)} rows). Review column mapping below.',
+                    )
+                    return redirect('datasets:map_columns', pk=dataset.pk)
+            except Exception as exc:
+                if dataset.normalized_file:
+                    dataset.normalized_file.delete(save=False)
+                if dataset.original_file:
+                    dataset.original_file.delete(save=False)
+                dataset.delete()
+                form.add_error('original_file', f'Unable to process uploaded file: {exc}')
     else:
         form = DatasetUploadForm()
 
     context = {
         'active_nav': 'datasets',
-        'page_title': 'Upload CSV Dataset',
+        'page_title': 'Upload Dataset (CSV, Excel, JSON)',
         'form': form,
     }
     return render(request, 'datasets/upload.html', context)
 
 
 @login_required
+def dataset_select_sheet_view(request, pk):
+    """Prompt the user to choose a worksheet from a multi-sheet Excel workbook."""
+    dataset = get_object_or_404(SalesDataset, pk=pk, user=request.user)
+    if dataset.source_format not in ('xlsx', 'xls'):
+        return redirect('datasets:map_columns', pk=dataset.pk)
+
+    try:
+        sheets = inspect_excel_sheets(dataset.original_file.path, source_format=dataset.source_format)
+    except FileNotFoundError:
+        messages.error(request, 'The uploaded Excel file could not be found on disk.')
+        return redirect('datasets:list')
+    except Exception as exc:
+        messages.error(request, f'Unable to inspect workbook sheets: {exc}')
+        return redirect('datasets:list')
+
+    usable_sheets = [s for s in sheets if s['is_usable']]
+    if not usable_sheets:
+        messages.error(request, 'This workbook contains no usable tabular worksheets.')
+        return redirect('datasets:list')
+
+    usable_names = {s['name'] for s in usable_sheets}
+
+    if request.method == 'POST':
+        form = SheetSelectionForm(usable_sheets, request.POST)
+        if form.is_valid():
+            chosen_sheet = form.cleaned_data['sheet_name']
+            if chosen_sheet not in usable_names:
+                messages.error(request, 'Selected worksheet is invalid or non-tabular.')
+            else:
+                try:
+                    df, notes = read_excel_file(
+                        dataset.original_file.path,
+                        sheet_name=chosen_sheet,
+                        source_format=dataset.source_format,
+                    )
+                    dataset.selected_sheet = chosen_sheet
+                    dataset.is_mapped = False
+                    _save_normalized_dataframe(dataset, df, notes)
+                    _log_activity(
+                        request.user,
+                        'upload',
+                        f'Selected worksheet "{chosen_sheet}" for "{dataset.name}" ({len(df)} rows).',
+                    )
+                    messages.success(
+                        request,
+                        f'Worksheet "{chosen_sheet}" imported and normalized ({len(df)} rows). Configure column mapping below.',
+                    )
+                    return redirect('datasets:map_columns', pk=dataset.pk)
+                except Exception as exc:
+                    messages.error(request, f'Unable to import worksheet "{chosen_sheet}": {exc}')
+    else:
+        initial_sheet = dataset.selected_sheet if dataset.selected_sheet in usable_names else usable_sheets[0]['name']
+        form = SheetSelectionForm(usable_sheets, initial={'sheet_name': initial_sheet})
+
+    context = {
+        'active_nav': 'datasets',
+        'page_title': f'Select Worksheet — {dataset.name}',
+        'dataset': dataset,
+        'form': form,
+        'sheets': sheets,
+        'usable_sheets': usable_sheets,
+    }
+    return render(request, 'datasets/select_sheet.html', context)
+
+
+@login_required
+def dataset_select_json_view(request, pk):
+    """Prompt the user to choose which candidate JSON array/path to normalize and import."""
+    dataset = get_object_or_404(SalesDataset, pk=pk, user=request.user)
+    if dataset.source_format != 'json':
+        return redirect('datasets:map_columns', pk=dataset.pk)
+
+    try:
+        candidates = inspect_json_candidates(dataset.original_file.path)
+    except FileNotFoundError:
+        messages.error(request, 'The uploaded JSON file could not be found on disk.')
+        return redirect('datasets:list')
+    except Exception as exc:
+        messages.error(request, f'Unable to inspect JSON structures: {exc}')
+        return redirect('datasets:list')
+
+    usable_candidates = [c for c in candidates if c['is_usable']]
+    if not usable_candidates:
+        messages.error(request, 'This JSON file contains no usable tabular record collections.')
+        return redirect('datasets:list')
+
+    usable_paths = {c['path'] for c in usable_candidates}
+
+    if request.method == 'POST':
+        form = JsonPathSelectionForm(usable_candidates, request.POST)
+        if form.is_valid():
+            chosen_path = form.cleaned_data['json_path']
+            if chosen_path not in usable_paths:
+                messages.error(request, 'Selected JSON path is invalid or empty.')
+            else:
+                try:
+                    df, notes = read_json_file(dataset.original_file.path, json_path=chosen_path)
+                    dataset.selected_json_path = chosen_path
+                    dataset.is_mapped = False
+                    _save_normalized_dataframe(dataset, df, notes)
+                    _log_activity(
+                        request.user,
+                        'upload',
+                        f'Selected JSON path "{chosen_path}" for "{dataset.name}" ({len(df)} rows).',
+                    )
+                    messages.success(
+                        request,
+                        f'JSON record collection "{chosen_path}" normalized ({len(df)} rows). Configure column mapping below.',
+                    )
+                    return redirect('datasets:map_columns', pk=dataset.pk)
+                except Exception as exc:
+                    messages.error(request, f'Unable to import JSON path "{chosen_path}": {exc}')
+    else:
+        initial_path = (
+            dataset.selected_json_path
+            if dataset.selected_json_path in usable_paths
+            else usable_candidates[0]['path']
+        )
+        form = JsonPathSelectionForm(usable_candidates, initial={'json_path': initial_path})
+
+    context = {
+        'active_nav': 'datasets',
+        'page_title': f'Select JSON Record Path — {dataset.name}',
+        'dataset': dataset,
+        'form': form,
+        'candidates': candidates,
+        'usable_candidates': usable_candidates,
+    }
+    return render(request, 'datasets/select_json.html', context)
+
+
+@login_required
 def dataset_map_columns_view(request, pk):
     """Inspect detected column types, map optional/target roles, and run automated profiling."""
     dataset = get_object_or_404(SalesDataset, pk=pk, user=request.user)
+    pending_redirect = _redirect_if_selection_pending(dataset)
+    if pending_redirect:
+        return pending_redirect
+
     try:
-        inspection = inspect_csv_headers(dataset.original_file.path)
+        inspection = inspect_csv_headers(dataset.source_file_path)
     except FileNotFoundError:
-        messages.error(request, 'The uploaded CSV file could not be found on disk.')
+        messages.error(request, 'The processed dataset file could not be found on disk.')
         return redirect('datasets:list')
     except Exception as exc:
-        messages.error(request, f'Unable to parse CSV file: {exc}')
+        messages.error(request, f'Unable to parse dataset file: {exc}')
         return redirect('datasets:list')
 
     columns = inspection['columns']
@@ -118,7 +373,7 @@ def dataset_map_columns_view(request, pk):
             dataset.column_schema = schema
             dataset.is_mapped = True
 
-            dataset.profile_summary = profile_general_dataset(dataset.original_file.path, schema)
+            dataset.profile_summary = profile_general_dataset(dataset.source_file_path, schema)
             dataset.save()
 
             _log_activity(
@@ -149,6 +404,9 @@ def dataset_map_columns_view(request, pk):
 def dataset_detail_view(request, pk):
     """Display automated profiling cards, per-column stats, quality checks, and sample rows."""
     dataset = get_object_or_404(SalesDataset, pk=pk, user=request.user)
+    pending_redirect = _redirect_if_selection_pending(dataset)
+    if pending_redirect:
+        return pending_redirect
     if not dataset.is_mapped:
         return redirect('datasets:map_columns', pk=dataset.pk)
 
@@ -173,11 +431,11 @@ def dataset_detail_view(request, pk):
 @login_required
 @require_POST
 def dataset_delete_view(request, pk):
-    """Delete an owned dataset and remove stored CSV files from disk."""
+    """Delete an owned dataset and remove stored original, normalized, and cleaned files."""
     dataset = get_object_or_404(SalesDataset, pk=pk, user=request.user)
     dataset_name = dataset.name
 
-    for file_field in (dataset.original_file, dataset.cleaned_file):
+    for file_field in (dataset.original_file, dataset.normalized_file, dataset.cleaned_file):
         if file_field:
             file_field.delete(save=False)
 
@@ -228,7 +486,7 @@ def data_explorer_view(request):
                 and selected_dataset.has_cleaned_version
                 and selected_dataset.cleaned_file
             )
-            file_path = selected_dataset.cleaned_file.path if use_cleaned else selected_dataset.original_file.path
+            file_path = selected_dataset.cleaned_file.path if use_cleaned else selected_dataset.source_file_path
             raw_df = read_raw_csv(file_path)
             schema = selected_dataset.column_schema or detect_column_schema(raw_df)
 
@@ -317,10 +575,10 @@ def data_cleaning_view(request):
 
             try:
                 cleaned_df, summary = clean_general_dataframe(
-                    selected_dataset.original_file.path, schema, options
+                    selected_dataset.source_file_path, schema, options
                 )
             except FileNotFoundError:
-                messages.error(request, 'Original CSV file was not found on disk.')
+                messages.error(request, 'Source dataset file was not found on disk.')
                 return redirect('datasets:list')
             except Exception as exc:
                 messages.error(request, f'Data cleaning failed: {exc}')
@@ -332,7 +590,7 @@ def data_cleaning_view(request):
                     selected_dataset.cleaned_file.delete(save=False)
 
                 csv_content = cleaned_df.to_csv(index=False).encode('utf-8')
-                base_stem = Path(selected_dataset.original_file.name).stem
+                base_stem = Path(selected_dataset.original_filename or selected_dataset.original_file.name).stem
                 cleaned_filename = f'{base_stem}_cleaned.csv'
                 selected_dataset.cleaned_file.save(
                     cleaned_filename, ContentFile(csv_content), save=False

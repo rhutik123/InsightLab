@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Select JSON Record Path — {{ dataset.name }} | InsightLab{% endblock %}
+{% block page_heading %}Select JSON Record Collection{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="text-base font-semibold text-slate-900">Choose JSON Array / Path to Import</h2>
+                <p class="mt-1 text-sm text-slate-600">
+                    File <strong>{{ dataset.original_filename|default:dataset.name }}</strong> contains multiple candidate JSON record collections. Select the collection you want to flatten and normalize for analysis.
+                </p>
+            </div>
+            <span class="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
+                {{ usable_candidates|length }} usable path(s)
+            </span>
+        </div>
+
+        <form method="post" class="mt-6 space-y-4">
+            {% csrf_token %}
+            <div class="space-y-3">
+                {% for cand in candidates %}
+                <label class="block rounded-xl border p-4 transition {% if cand.is_usable %}border-slate-200 bg-white hover:border-indigo-300 cursor-pointer{% else %}border-slate-200 bg-slate-50 opacity-70 cursor-not-allowed{% endif %}">
+                    <div class="flex items-start gap-3">
+                        <input type="radio"
+                               name="json_path"
+                               value="{{ cand.path }}"
+                               class="mt-1 h-4 w-4 text-indigo-600 border-slate-300"
+                               {% if not cand.is_usable %}disabled{% elif cand.path == form.json_path.value or cand.path == form.initial.json_path %}checked{% endif %}>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="font-mono text-sm font-semibold text-slate-900">{{ cand.label }}</span>
+                                <span class="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                                    {{ cand.row_count }} records &times; {{ cand.column_count }} cols
+                                </span>
+                                {% if cand.is_usable %}
+                                    <span class="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Usable</span>
+                                {% else %}
+                                    <span class="rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">Not Usable</span>
+                                {% endif %}
+                            </div>
+
+                            {% if cand.headers %}
+                                <p class="mt-1.5 text-xs text-slate-600">
+                                    <strong>Detected Columns:</strong> {{ cand.headers|join:", " }}
+                                </p>
+                            {% endif %}
+
+                            {% if cand.notes %}
+                                <ul class="mt-1.5 list-disc pl-4 text-xs text-amber-700 space-y-0.5">
+                                    {% for note in cand.notes %}
+                                        <li>{{ note }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+
+                            {% if cand.preview_rows %}
+                            <div class="mt-3 overflow-x-auto rounded-lg border border-slate-200">
+                                <table class="min-w-full divide-y divide-slate-200 text-xs">
+                                    <thead class="bg-slate-50 text-left font-semibold text-slate-600">
+                                        <tr>
+                                            {% for col in cand.headers %}
+                                                <th class="px-2.5 py-1.5 whitespace-nowrap">{{ col }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        {% for row in cand.preview_rows %}
+                                        <tr>
+                                            {% for col, val in row.items %}
+                                                <td class="px-2.5 py-1.5 text-slate-700 whitespace-nowrap">{{ val }}</td>
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3 pt-2">
+                <button type="submit"
+                        class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-xs hover:bg-indigo-700">
+                    Import Selected JSON Path
+                </button>
+                <a href="{% url 'datasets:list' %}"
+                   class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    Back to My Datasets
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

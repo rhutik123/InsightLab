@@ -6,8 +6,8 @@
 {% block content %}
 <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
-        <h2 class="text-base font-semibold text-slate-900">Uploaded CSV Datasets</h2>
-        <p class="text-sm text-slate-600">Upload any structured CSV dataset (sales, web traffic, expenses, inventory, or custom metrics) for profiling and analysis.</p>
+        <h2 class="text-base font-semibold text-slate-900">Uploaded Datasets</h2>
+        <p class="text-sm text-slate-600">Upload CSV (.csv), Excel (.xlsx, .xls), or JSON (.json) datasets (sales, web traffic, expenses, inventory, or custom metrics) for profiling and analysis.</p>
     </div>
     <div class="flex flex-wrap gap-2">
         <a href="{% url 'datasets:sample_csv' %}?type=sales"
@@ -24,7 +24,7 @@
         </a>
         <a href="{% url 'datasets:upload' %}"
            class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-indigo-700">
-            + Upload CSV
+            + Upload Dataset
         </a>
     </div>
 </div>
@@ -35,32 +35,38 @@
         <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                 <tr>
-                    <th class="px-5 py-3.5">Dataset</th>
-                    <th class="px-5 py-3.5">Domain</th>
-                    <th class="px-5 py-3.5">Shape &amp; Schema</th>
-                    <th class="px-5 py-3.5">Date Range</th>
-                    <th class="px-5 py-3.5">Status</th>
-                    <th class="px-5 py-3.5 text-right">Actions</th>
+                    <th class="px-3 py-3 sm:px-4">Dataset</th>
+                    <th class="hidden md:table-cell px-4 py-3">Domain</th>
+                    <th class="hidden sm:table-cell px-4 py-3">Shape &amp; Schema</th>
+                    <th class="hidden lg:table-cell px-4 py-3">Date Range</th>
+                    <th class="px-3 py-3 sm:px-4">Status</th>
+                    <th class="px-3 py-3 sm:px-4 text-right">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
                 {% for ds in datasets %}
                 {% with prof=ds.active_profile %}
                 <tr class="hover:bg-slate-50/70">
-                    <td class="px-5 py-4">
+                    <td class="px-3 py-3 sm:px-4">
                         <a href="{% url 'datasets:detail' ds.pk %}" class="font-semibold text-slate-900 hover:text-indigo-600">
                             {{ ds.name }}
                         </a>
+                        <div class="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+                            <span class="inline-flex rounded bg-slate-100 px-1.5 py-0.5 font-semibold uppercase text-slate-700">{{ ds.source_format }}</span>
+                            {% if ds.original_filename %}<span>{{ ds.original_filename }}</span>{% endif %}
+                            {% if ds.selected_sheet %}<span>&bull; Sheet: {{ ds.selected_sheet }}</span>{% endif %}
+                            {% if ds.selected_json_path %}<span>&bull; Path: {{ ds.selected_json_path }}</span>{% endif %}
+                        </div>
                         {% if ds.description %}
                             <p class="mt-0.5 text-xs text-slate-500 line-clamp-1">{{ ds.description }}</p>
                         {% endif %}
                     </td>
-                    <td class="px-5 py-4 text-xs text-slate-600">
+                    <td class="hidden md:table-cell px-4 py-3 text-xs text-slate-600">
                         <span class="inline-flex rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-700">
                             {{ ds.get_dataset_type_display }}
                         </span>
                     </td>
-                    <td class="px-5 py-4 text-slate-600 text-xs">
+                    <td class="hidden sm:table-cell px-4 py-3 text-slate-600 text-xs">
                         {% if ds.is_mapped %}
                             <span>{{ prof.row_count|default:0 }} rows &times; {{ prof.col_count|default:0 }} cols</span>
                             {% if prof.primary_target_column %}
@@ -70,7 +76,7 @@
                             <span class="text-amber-700">Pending schema setup</span>
                         {% endif %}
                     </td>
-                    <td class="px-5 py-4 text-xs text-slate-600">
+                    <td class="hidden lg:table-cell px-4 py-3 text-xs text-slate-600">
                         {% if ds.is_mapped and prof.date_min %}
                             {{ prof.date_min }} to {{ prof.date_max }}
                         {% elif ds.is_mapped %}
@@ -79,21 +85,35 @@
                             —
                         {% endif %}
                     </td>
-                    <td class="px-5 py-4">
-                        <div class="flex flex-wrap gap-1.5">
-                            {% if not ds.is_mapped %}
-                                <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">Needs Mapping</span>
+                    <td class="px-3 py-3 sm:px-4">
+                        <div class="flex flex-wrap gap-1">
+                            {% if ds.needs_structure_selection %}
+                                <span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Needs Selection</span>
+                            {% elif not ds.is_mapped %}
+                                <span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Needs Mapping</span>
                             {% else %}
-                                <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Profiled</span>
+                                <span class="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">Profiled</span>
                             {% endif %}
                             {% if ds.has_cleaned_version %}
-                                <span class="inline-flex rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">Cleaned</span>
+                                <span class="inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700">Cleaned</span>
                             {% endif %}
                         </div>
                     </td>
-                    <td class="px-5 py-4 text-right">
-                        <div class="inline-flex items-center gap-2">
-                            {% if ds.is_mapped %}
+                    <td class="px-3 py-3 sm:px-4 text-right">
+                        <div class="flex flex-wrap items-center justify-end gap-1.5">
+                            {% if ds.needs_structure_selection %}
+                                {% if ds.source_format == 'json' %}
+                                    <a href="{% url 'datasets:select_json' ds.pk %}"
+                                       class="rounded-md bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700">
+                                        Select JSON Path
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'datasets:select_sheet' ds.pk %}"
+                                       class="rounded-md bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700">
+                                        Select Sheet
+                                    </a>
+                                {% endif %}
+                            {% elif ds.is_mapped %}
                                 <a href="{% url 'datasets:detail' ds.pk %}"
                                    class="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">
                                     Profile

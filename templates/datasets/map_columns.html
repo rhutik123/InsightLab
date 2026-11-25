@@ -54,8 +54,19 @@
             </div>
         </div>
 
+        {% if dataset.ingestion_notes %}
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
+            <p class="font-semibold">Ingestion &amp; Normalization Notes ({{ dataset.get_source_format_display }})</p>
+            <ul class="mt-1 list-disc pl-4 space-y-0.5">
+                {% for note in dataset.ingestion_notes %}
+                    <li>{{ note }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-            <h3 class="text-base font-semibold text-slate-900">CSV Preview (First 5 Rows)</h3>
+            <h3 class="text-base font-semibold text-slate-900">Dataset Preview (First 5 Rows)</h3>
             <p class="mt-1 text-xs text-slate-500">Verify column contents before confirming the analytical schema.</p>
 
             <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200">

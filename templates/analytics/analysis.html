@@ -7,10 +7,10 @@
 {% if not datasets %}
 <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
     <h3 class="text-base font-semibold text-slate-900">No mapped datasets available</h3>
-    <p class="mt-1 text-sm text-slate-600">Upload and configure a CSV dataset to run exploratory data analysis.</p>
+    <p class="mt-1 text-sm text-slate-600">Upload and configure a CSV, Excel, or JSON dataset to run exploratory data analysis.</p>
     <a href="{% url 'datasets:upload' %}"
        class="mt-5 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-        Upload CSV Dataset
+        Upload Dataset
     </a>
 </div>
 {% else %}

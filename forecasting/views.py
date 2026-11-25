@@ -63,7 +63,7 @@ def _resolve_forecast_inputs(dataset, requested_version='cleaned', requested_tar
         group_col = ''
 
     # Build standardized 4-column DataFrame for preprocessing & models
-    file_path = dataset.cleaned_file.path if used_version == 'cleaned' else dataset.original_file.path
+    file_path = dataset.cleaned_file.path if used_version == 'cleaned' else dataset.source_file_path
     mapping = {
         'date': date_col,
         'product': group_col,
@@ -389,7 +389,10 @@ def experiment_lab_view(request):
     mapped_datasets = SalesDataset.objects.filter(user=request.user, is_mapped=True)
 
     initial_data = {}
-    if mapped_datasets.exists():
+    ds_param = request.GET.get('dataset')
+    if ds_param and mapped_datasets.filter(pk=ds_param).exists():
+        initial_data['dataset'] = ds_param
+    elif mapped_datasets.exists():
         initial_data['dataset'] = mapped_datasets.first().pk
 
     active_batch = []

@@ -1,11 +1,12 @@
 """
-Forms for uploading CSV datasets, mapping flexible column roles, and configuring data cleaning.
+Forms for uploading CSV, Excel (.xlsx/.xls), and JSON datasets, selecting workbook sheets
+or JSON record paths, mapping flexible column roles, and configuring data cleaning.
 """
 
 from django import forms
 
 from accounts.forms import INPUT_CLASS
-from .data_processing import validate_csv_upload
+from .data_processing import validate_uploaded_dataset
 from .models import SalesDataset
 
 SELECT_CLASS = (
@@ -16,7 +17,7 @@ SELECT_CLASS = (
 
 
 class DatasetUploadForm(forms.ModelForm):
-    """Upload form for any structured CSV dataset."""
+    """Upload form supporting CSV (.csv), Excel (.xlsx, .xls), and JSON (.json) datasets."""
 
     class Meta:
         model = SalesDataset
@@ -24,6 +25,7 @@ class DatasetUploadForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.detected_format = 'csv'
         self.fields['name'].widget.attrs.update({
             'class': INPUT_CLASS,
             'placeholder': 'e.g., Website Traffic Q1, Retail Sales 2025, Monthly Expenses',
@@ -38,13 +40,14 @@ class DatasetUploadForm(forms.ModelForm):
                 'placeholder': 'Optional notes about data source, granularity, or domain context...',
             }
         )
+        self.fields['original_file'].label = 'Dataset File (.csv, .xlsx, .xls, .json)'
         self.fields['original_file'].widget.attrs.update({
             'class': (
                 'block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg '
                 'file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm '
                 'file:font-medium file:text-indigo-700 hover:file:bg-indigo-100'
             ),
-            'accept': '.csv',
+            'accept': '.csv,.xlsx,.xls,.json',
         })
 
     def clean_dataset_type(self):
@@ -52,10 +55,47 @@ class DatasetUploadForm(forms.ModelForm):
 
     def clean_original_file(self):
         uploaded_file = self.cleaned_data.get('original_file')
-        is_valid, error_message = validate_csv_upload(uploaded_file)
+        is_valid, error_message, detected_format = validate_uploaded_dataset(uploaded_file)
         if not is_valid:
             raise forms.ValidationError(error_message)
+        self.detected_format = detected_format or 'csv'
         return uploaded_file
+
+
+class SheetSelectionForm(forms.Form):
+    """Select which usable worksheet from a multi-sheet Excel workbook to ingest."""
+
+    sheet_name = forms.ChoiceField(
+        label='Worksheet to Import',
+        widget=forms.RadioSelect,
+    )
+
+    def __init__(self, usable_sheets, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['sheet_name'].choices = [
+            (s['name'], f"{s['name']} ({s['row_count']} rows, {s['column_count']} columns)")
+            for s in usable_sheets
+        ]
+        if usable_sheets and not self.initial.get('sheet_name'):
+            self.initial['sheet_name'] = usable_sheets[0]['name']
+
+
+class JsonPathSelectionForm(forms.Form):
+    """Select which candidate record path inside a structured JSON file to ingest."""
+
+    json_path = forms.ChoiceField(
+        label='JSON Record Collection to Import',
+        widget=forms.RadioSelect,
+    )
+
+    def __init__(self, usable_candidates, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['json_path'].choices = [
+            (c['path'], f"{c['label']} ({c['row_count']} records, {c['column_count']} columns)")
+            for c in usable_candidates
+        ]
+        if usable_candidates and not self.initial.get('json_path'):
+            self.initial['json_path'] = usable_candidates[0]['path']
 
 
 class ColumnMappingForm(forms.Form):

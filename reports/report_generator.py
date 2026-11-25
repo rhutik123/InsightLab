@@ -175,8 +175,20 @@ def build_sales_report_pdf(
 
     # 2. Dataset Overview
     story.append(Paragraph('1. Dataset Overview', h2_style))
+    source_detail = dataset.get_source_format_display()
+    if dataset.selected_sheet:
+        source_detail = f'{source_detail} (Sheet: {dataset.selected_sheet})'
+    elif dataset.selected_json_path:
+        source_detail = f'{source_detail} (Path: {dataset.selected_json_path})'
+
     overview_rows = [
         ['Metric', 'Value', 'Metric', 'Value'],
+        [
+            'Source Format',
+            source_detail[:36],
+            'Original Filename',
+            (dataset.original_filename or dataset.original_file.name or '—').split('/')[-1][:36],
+        ],
         [
             'Total Rows',
             str(profile.get('row_count', 0)),

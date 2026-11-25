@@ -1,7 +1,7 @@
 """
 Database models for uploaded datasets and workspace activity tracking.
-Supports general structured CSV datasets while preserving compatibility with
-sales-forecasting research workflows.
+Supports CSV, Excel (.xlsx/.xls), and JSON datasets via a shared normalized
+pipeline while preserving compatibility with sales-forecasting workflows.
 """
 
 from django.contrib.auth.models import User
@@ -9,7 +9,7 @@ from django.db import models
 
 
 class SalesDataset(models.Model):
-    """Represents a user-uploaded structured CSV dataset and its optional cleaned version."""
+    """Represents a user-uploaded structured dataset and its normalized/cleaned versions."""
 
     DATASET_TYPE_CHOICES = [
         ('general', 'General Analytics'),
@@ -19,14 +19,27 @@ class SalesDataset(models.Model):
         ('inventory', 'Inventory & Operations'),
     ]
 
+    SOURCE_FORMAT_CHOICES = [
+        ('csv', 'CSV (.csv)'),
+        ('xlsx', 'Excel (.xlsx)'),
+        ('xls', 'Legacy Excel (.xls)'),
+        ('json', 'JSON (.json)'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sales_datasets')
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
     dataset_type = models.CharField(max_length=40, choices=DATASET_TYPE_CHOICES, default='general')
 
     original_file = models.FileField(upload_to='datasets/original/%Y/%m/')
+    normalized_file = models.FileField(upload_to='datasets/normalized/%Y/%m/', blank=True, null=True)
     cleaned_file = models.FileField(upload_to='datasets/cleaned/%Y/%m/', blank=True, null=True)
     file_size_bytes = models.PositiveIntegerField(default=0)
+    source_format = models.CharField(max_length=12, choices=SOURCE_FORMAT_CHOICES, default='csv')
+    original_filename = models.CharField(max_length=255, blank=True)
+    selected_sheet = models.CharField(max_length=120, blank=True)
+    selected_json_path = models.CharField(max_length=200, blank=True)
+    ingestion_notes = models.JSONField(default=list, blank=True)
 
     # Primary role mappings (kept compatible with existing sales workflows; date & group are optional)
     date_column = models.CharField(max_length=120, blank=True)
@@ -55,11 +68,25 @@ class SalesDataset(models.Model):
         return f'{self.name} ({self.user.username})'
 
     @property
+    def source_file_path(self):
+        """Return normalized CSV path if available, otherwise original file path."""
+        if self.normalized_file:
+            return self.normalized_file.path
+        return self.original_file.path
+
+    @property
     def active_file_path(self):
-        """Return cleaned file path if available, otherwise original file path."""
+        """Return cleaned file path if available, otherwise normalized/original source path."""
         if self.has_cleaned_version and self.cleaned_file:
             return self.cleaned_file.path
-        return self.original_file.path
+        return self.source_file_path
+
+    @property
+    def needs_structure_selection(self):
+        """Return True when a multi-sheet Excel or multi-array JSON file awaits user selection."""
+        if self.normalized_file:
+            return False
+        return self.source_format in ('xlsx', 'xls', 'json')
 
     @property
     def active_profile(self):

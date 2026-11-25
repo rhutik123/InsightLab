@@ -162,6 +162,10 @@ class ForecastingViewsIntegrationTests(TestCase):
                 4,
             )
             self.assertEqual(self.client.get(reverse('forecasting:compare')).status_code, 200)
+            # Verify ?dataset=<id> pre-selects the dataset in Experiment Lab
+            lab_get = self.client.get(reverse('forecasting:experiments') + f'?dataset={ds.pk}')
+            self.assertEqual(lab_get.status_code, 200)
+            self.assertEqual(lab_get.context['form'].initial.get('dataset'), str(ds.pk))
 
     def test_generalized_forecasting_on_traffic_expenses_and_non_date_validation(self):
         with override_settings(MEDIA_ROOT=self.temp_media):

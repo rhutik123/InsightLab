@@ -65,7 +65,7 @@ def report_list_view(request):
         if experiments:
             insights = experiments[0].insights_json or []
         if not insights and date_col and target_col and not df.empty:
-            file_path = dataset.cleaned_file.path if used_version == 'cleaned' else dataset.original_file.path
+            file_path = dataset.cleaned_file.path if used_version == 'cleaned' else dataset.source_file_path
             std_df = load_standardized_dataframe(
                 file_path,
                 {'date': date_col, 'product': group_col, 'quantity': secondary_col, 'revenue': target_col},

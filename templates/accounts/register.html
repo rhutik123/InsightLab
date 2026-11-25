@@ -78,7 +78,7 @@
                 </label>
                 {{ form.password1 }}
                 {% if form.password1.help_text %}
-                    <p class="mt-1 text-xs text-slate-500">{{ form.password1.help_text|striptags }}</p>
+                    <div class="mt-1.5 text-xs text-slate-500 [&>ul]:list-disc [&>ul]:pl-4 [&>ul]:space-y-0.5">{{ form.password1.help_text }}</div>
                 {% endif %}
                 {% if form.password1.errors %}
                     <p class="mt-1 text-xs text-red-600">{{ form.password1.errors.0 }}</p>

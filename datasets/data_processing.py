@@ -1,20 +1,140 @@
 """
-Dataset validation, automatic schema detection, column mapping, automated profiling,
-non-destructive cleaning, and synthetic sample dataset generators.
-Designed to support general structured CSV datasets (sales, traffic, expenses,
-inventory, tabular metrics) while keeping full compatibility with sales research.
+Dataset validation, multi-format ingestion (CSV, XLSX, XLS, JSON), automatic schema
+detection, column mapping, automated profiling, non-destructive cleaning, and
+synthetic sample dataset generators.
+Designed to support general structured tabular datasets while keeping full
+compatibility with sales and predictive forecasting workflows.
 """
 
 import csv
+import datetime as dt
 import io
+import json
 import math
+import os
+import posixpath
 import random
+import re
+import zipfile
 from datetime import date, timedelta
 
 import numpy as np
+import openpyxl
 import pandas as pd
+import xlrd
 
 MAX_CSV_SIZE_BYTES = 15 * 1024 * 1024  # 15 MB
+MAX_UPLOAD_SIZE_BYTES = MAX_CSV_SIZE_BYTES
+SUPPORTED_UPLOAD_EXTENSIONS = {'.csv', '.xlsx', '.xls', '.json'}
+MAX_XLSX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024  # 50 MB zip-bomb defense
+MAX_XLSX_ARCHIVE_ENTRIES = 500
+MAX_EXCEL_ROWS = 200000
+MAX_EXCEL_COLS = 250
+MAX_JSON_DEPTH = 12
+MAX_JSON_CANDIDATES = 25
+OLE2_MAGIC = b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'
+ZIP_MAGIC_PREFIXES = (b'PK\x03\x04', b'PK\x05\x06', b'PK\x07\x08')
+
+
+def sanitize_original_filename(filename):
+    """Return a clean single-segment filename without directory traversal or control characters."""
+    base_name = os.path.basename((filename or '').replace('\\', '/')).strip()
+    if not base_name:
+        return 'dataset.csv'
+    cleaned = re.sub(r'[^A-Za-z0-9._-]+', '_', base_name)
+    cleaned = cleaned.lstrip('.') or 'dataset.csv'
+    return cleaned[:255]
+
+
+def detect_file_format(filename):
+    """Return normalized format code ('csv', 'xlsx', 'xls', 'json') or None if unsupported."""
+    ext = os.path.splitext((filename or '').strip().lower())[1]
+    mapping = {
+        '.csv': 'csv',
+        '.xlsx': 'xlsx',
+        '.xls': 'xls',
+        '.json': 'json',
+    }
+    return mapping.get(ext)
+
+
+def _sanitize_headers(raw_headers):
+    """
+    Normalize raw column headers: replace blank headers with deterministic names,
+    collapse multiline whitespace, and deduplicate repeated names safely.
+    Returns (cleaned_headers, ingestion_notes).
+    """
+    cleaned = []
+    seen_counts = {}
+    blank_renamed = 0
+    duplicate_renamed = 0
+
+    for idx, raw_name in enumerate(raw_headers, start=1):
+        text = '' if raw_name is None else str(raw_name)
+        text = re.sub(r'[\r\n\t]+', ' ', text).strip()
+        if not text or text.lower() in ('nan', 'none', 'null'):
+            base = f'Unnamed_Col_{idx}'
+            blank_renamed += 1
+        elif re.match(r'^Unnamed:\s*\d+$', text):
+            base = f'Unnamed_Col_{idx}'
+            blank_renamed += 1
+        else:
+            base = text
+
+        base = base[:110]
+        if base in seen_counts:
+            seen_counts[base] += 1
+            unique_name = f'{base}_{seen_counts[base]}'
+            while unique_name in seen_counts:
+                seen_counts[base] += 1
+                unique_name = f'{base}_{seen_counts[base]}'
+            seen_counts[unique_name] = 1
+            duplicate_renamed += 1
+            cleaned.append(unique_name)
+        else:
+            seen_counts[base] = 1
+            cleaned.append(base)
+
+    notes = []
+    if blank_renamed:
+        notes.append(f'{blank_renamed} blank header column(s) were automatically named.')
+    if duplicate_renamed:
+        notes.append(f'{duplicate_renamed} duplicate header name(s) were suffixed for uniqueness.')
+    return cleaned, notes
+
+
+def _validate_csv_bytes_content(raw_bytes):
+    """Shared validation logic for CSV bytes content."""
+    if not raw_bytes:
+        return False, 'The uploaded CSV file is empty.'
+
+    sample_bytes = raw_bytes[:65536]
+    if b'\x00' in sample_bytes:
+        return False, 'Binary or NUL-byte content is not a valid CSV file.'
+
+    try:
+        text_sample = sample_bytes.decode('utf-8-sig', errors='strict')
+    except UnicodeDecodeError:
+        try:
+            text_sample = sample_bytes.decode('latin-1')
+        except Exception:
+            return False, 'Unable to decode file as text CSV.'
+
+    if not text_sample.strip():
+        return False, 'The uploaded CSV file contains no data.'
+
+    try:
+        df_preview = pd.read_csv(io.StringIO(text_sample), nrows=5)
+    except Exception as exc:
+        return False, f'Invalid CSV format: {exc}'
+
+    if len(df_preview.columns) < 2:
+        return False, 'A structured CSV dataset must have at least 2 columns.'
+
+    if df_preview.empty:
+        return False, 'The CSV file contains headers but no data rows.'
+
+    return True, None
 
 
 def validate_csv_upload(uploaded_file, max_size_bytes=MAX_CSV_SIZE_BYTES):
@@ -41,32 +161,737 @@ def validate_csv_upload(uploaded_file, max_size_bytes=MAX_CSV_SIZE_BYTES):
         uploaded_file.seek(0)
         sample_bytes = uploaded_file.read(65536)
         uploaded_file.seek(0)
-        if b'\x00' in sample_bytes:
-            return False, 'Binary or NUL-byte content is not a valid CSV file.'
-        text_sample = sample_bytes.decode('utf-8-sig', errors='strict')
-    except UnicodeDecodeError:
-        try:
-            uploaded_file.seek(0)
-            text_sample = uploaded_file.read(65536).decode('latin-1')
-            uploaded_file.seek(0)
-        except Exception:
-            return False, 'Unable to decode file as text CSV.'
+    except Exception:
+        return False, 'Unable to read uploaded CSV file.'
 
-    if not text_sample.strip():
-        return False, 'The uploaded CSV file contains no data.'
+    return _validate_csv_bytes_content(sample_bytes)
+
+
+def _format_excel_cell_value(value):
+    """Convert raw Excel cell values into clean tabular scalars without executing formulas."""
+    if value is None:
+        return None
+    if isinstance(value, dt.datetime):
+        if value.hour == 0 and value.minute == 0 and value.second == 0 and value.microsecond == 0:
+            return value.date().isoformat()
+        return value.isoformat(sep=' ', timespec='seconds')
+    if isinstance(value, dt.date):
+        return value.isoformat()
+    if isinstance(value, dt.time):
+        return value.isoformat(timespec='seconds')
+    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+        return None
+    if isinstance(value, str):
+        stripped = value.strip()
+        return stripped if stripped != '' else None
+    return value
+
+
+def _extract_xlsx_sheet_matrix(ws, max_rows=None):
+    """Extract trimmed matrix from an openpyxl read-only worksheet."""
+    rows = []
+    for row_idx, raw_row in enumerate(ws.iter_rows(values_only=True), start=1):
+        if row_idx > MAX_EXCEL_ROWS:
+            break
+        converted = [_format_excel_cell_value(cell) for cell in raw_row[:MAX_EXCEL_COLS]]
+        # Trim trailing None values
+        while converted and converted[-1] is None:
+            converted.pop()
+        if any(cell is not None for cell in converted):
+            rows.append(converted)
+            if max_rows and len(rows) >= max_rows:
+                break
+    return rows
+
+
+def _extract_xls_sheet_matrix(sheet, datemode, max_rows=None):
+    """Extract trimmed matrix from an xlrd worksheet, converting Excel serial dates."""
+    rows = []
+    row_limit = min(sheet.nrows, MAX_EXCEL_ROWS)
+    col_limit = min(sheet.ncols, MAX_EXCEL_COLS)
+    error_cell_count = 0
+
+    for r in range(row_limit):
+        converted = []
+        for c in range(col_limit):
+            cell = sheet.cell(r, c)
+            ctype = cell.ctype
+            if ctype in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
+                converted.append(None)
+            elif ctype == xlrd.XL_CELL_DATE:
+                try:
+                    dt_val = xlrd.xldate_as_datetime(cell.value, datemode)
+                    converted.append(_format_excel_cell_value(dt_val))
+                except Exception:
+                    converted.append(cell.value)
+            elif ctype == xlrd.XL_CELL_BOOLEAN:
+                converted.append(bool(cell.value))
+            elif ctype == xlrd.XL_CELL_ERROR:
+                converted.append(None)
+                error_cell_count += 1
+            elif ctype == xlrd.XL_CELL_NUMBER:
+                val = cell.value
+                if isinstance(val, float) and val.is_integer():
+                    converted.append(int(val))
+                else:
+                    converted.append(_format_excel_cell_value(val))
+            else:
+                converted.append(_format_excel_cell_value(cell.value))
+
+        while converted and converted[-1] is None:
+            converted.pop()
+        if any(cell is not None for cell in converted):
+            rows.append(converted)
+            if max_rows and len(rows) >= max_rows:
+                break
+
+    return rows, error_cell_count
+
+
+def _rows_matrix_to_dataframe(rows):
+    """
+    Convert a non-empty matrix where row 0 is headers into (df, notes).
+    Aligns ragged rows and sanitizes duplicate/blank headers.
+    """
+    if not rows:
+        return pd.DataFrame(), ['Worksheet contains no non-empty rows.']
+
+    max_width = max(len(r) for r in rows)
+    header_row = list(rows[0]) + [None] * (max_width - len(rows[0]))
+    clean_headers, header_notes = _sanitize_headers(header_row)
+
+    data_rows = []
+    for raw in rows[1:]:
+        padded = list(raw) + [None] * (max_width - len(raw))
+        if any(cell is not None for cell in padded):
+            data_rows.append(padded)
+
+    df = pd.DataFrame(data_rows, columns=clean_headers)
+    return df, header_notes
+
+
+def _count_uncached_xlsx_formulas(file_source, sheet_name, max_scan_rows=2000):
+    """
+    Detect cells containing Excel formula strings ('=...') that have None as their
+    cached value under data_only=True so InsightLab can warn transparently.
+    """
+    wb_cached = None
+    wb_formula = None
+    try:
+        wb_cached = openpyxl.load_workbook(file_source, read_only=True, data_only=True)
+        wb_formula = openpyxl.load_workbook(file_source, read_only=True, data_only=False)
+        if sheet_name not in wb_cached.sheetnames or sheet_name not in wb_formula.sheetnames:
+            return 0
+        ws_c = wb_cached[sheet_name]
+        ws_f = wb_formula[sheet_name]
+        uncached = 0
+        for row_idx, (rc, rf) in enumerate(
+            zip(ws_c.iter_rows(values_only=True), ws_f.iter_rows(values_only=True)),
+            start=1,
+        ):
+            if row_idx > max_scan_rows:
+                break
+            for vc, vf in zip(rc[:MAX_EXCEL_COLS], rf[:MAX_EXCEL_COLS]):
+                if isinstance(vf, str) and vf.startswith('=') and vc is None:
+                    uncached += 1
+        return uncached
+    except Exception:
+        return 0
+    finally:
+        for wb in (wb_cached, wb_formula):
+            if wb is not None:
+                try:
+                    wb.close()
+                except Exception:
+                    pass
+
+
+def _validate_xlsx_bytes(raw_bytes):
+    """Safely inspect ZIP structure, detect encryption/macros/zip bombs, and verify tabular sheet data."""
+    if not raw_bytes:
+        return False, 'The uploaded .xlsx file is empty.'
+
+    if raw_bytes.startswith(OLE2_MAGIC):
+        return False, 'Encrypted or legacy-wrapped Excel files cannot be parsed. Upload an unencrypted .xlsx or .xls workbook.'
+
+    if not raw_bytes.startswith(ZIP_MAGIC_PREFIXES):
+        return False, 'Invalid .xlsx file: file signature does not match a valid Excel OpenXML archive.'
 
     try:
-        df_preview = pd.read_csv(io.StringIO(text_sample), nrows=5)
+        with zipfile.ZipFile(io.BytesIO(raw_bytes), 'r') as zf:
+            infos = zf.infolist()
+            if not infos:
+                return False, 'Invalid .xlsx archive: archive is empty.'
+            if len(infos) > MAX_XLSX_ARCHIVE_ENTRIES:
+                return False, 'Invalid .xlsx archive: excessive archive entries detected.'
+
+            total_uncompressed = 0
+            names = set()
+            for info in infos:
+                normalized_name = posixpath.normpath(info.filename.replace('\\', '/'))
+                if normalized_name.startswith('/') or normalized_name.startswith('..') or '/../' in normalized_name:
+                    return False, 'Invalid .xlsx archive: unsafe internal archive path.'
+                total_uncompressed += max(0, info.file_size)
+                if total_uncompressed > MAX_XLSX_UNCOMPRESSED_BYTES:
+                    return False, 'The .xlsx archive exceeds the safe uncompressed size limit (possible zip bomb).'
+                names.add(info.filename.lower())
+
+            if '[content_types].xml' not in names or not any(n.endswith('workbook.xml') for n in names):
+                return False, 'Invalid .xlsx file: missing required Excel workbook metadata.'
+            if any(n.endswith('vbaproject.bin') for n in names):
+                return False, 'Macro-enabled workbooks are not supported. Save the workbook as standard .xlsx without macros.'
+    except zipfile.BadZipFile:
+        return False, 'Corrupted .xlsx file: unable to read OpenXML ZIP archive.'
     except Exception as exc:
-        return False, f'Invalid CSV format: {exc}'
+        return False, f'Unable to inspect .xlsx archive: {exc}'
 
-    if len(df_preview.columns) < 2:
-        return False, 'A structured CSV dataset must have at least 2 columns.'
+    wb = None
+    try:
+        wb = openpyxl.load_workbook(io.BytesIO(raw_bytes), read_only=True, data_only=True)
+        if not wb.sheetnames:
+            return False, 'The .xlsx workbook contains no worksheets.'
 
-    if df_preview.empty:
-        return False, 'The CSV file contains headers but no data rows.'
+        has_usable_sheet = False
+        for name in wb.sheetnames:
+            rows = _extract_xlsx_sheet_matrix(wb[name], max_rows=10)
+            if len(rows) >= 2:
+                df_preview, _ = _rows_matrix_to_dataframe(rows)
+                if len(df_preview.columns) >= 2 and len(df_preview) >= 1:
+                    has_usable_sheet = True
+                    break
+
+        if not has_usable_sheet:
+            return False, (
+                'No usable worksheet found in the .xlsx workbook. Each usable sheet must have at least '
+                '2 columns and 1 data row.'
+            )
+    except Exception as exc:
+        return False, f'Unable to parse .xlsx workbook safely: {exc}'
+    finally:
+        if wb is not None:
+            try:
+                wb.close()
+            except Exception:
+                pass
 
     return True, None
+
+
+def _validate_xls_bytes(raw_bytes):
+    """Safely validate legacy BIFF .xls bytes using xlrd without executing macros."""
+    if not raw_bytes:
+        return False, 'The uploaded .xls file is empty.'
+
+    if not raw_bytes.startswith(OLE2_MAGIC):
+        return False, 'Invalid .xls file: file signature does not match a valid legacy Excel (.xls) workbook.'
+
+    wb = None
+    try:
+        wb = xlrd.open_workbook(file_contents=raw_bytes, on_demand=True)
+        if wb.nsheets == 0:
+            return False, 'The .xls workbook contains no worksheets.'
+
+        has_usable_sheet = False
+        for idx in range(wb.nsheets):
+            sheet = wb.sheet_by_index(idx)
+            rows, _ = _extract_xls_sheet_matrix(sheet, wb.datemode, max_rows=10)
+            if len(rows) >= 2:
+                df_preview, _ = _rows_matrix_to_dataframe(rows)
+                if len(df_preview.columns) >= 2 and len(df_preview) >= 1:
+                    has_usable_sheet = True
+                    break
+
+        if not has_usable_sheet:
+            return False, (
+                'No usable worksheet found in the .xls workbook. Each usable sheet must have at least '
+                '2 columns and 1 data row.'
+            )
+    except xlrd.XLRDError as exc:
+        return False, f'Invalid or unsupported .xls workbook: {exc}'
+    except Exception as exc:
+        return False, f'Unable to parse legacy .xls workbook: {exc}'
+    finally:
+        if wb is not None:
+            try:
+                wb.release_resources()
+            except Exception:
+                pass
+
+    return True, None
+
+
+def _flatten_json_record(record, parent_key='', sep='.', depth=0):
+    """
+    Flatten nested JSON objects using dot notation while serializing nested arrays
+    safely as JSON strings so no information is silently dropped.
+    """
+    flat = {}
+    if not isinstance(record, dict):
+        return flat
+
+    for key, value in record.items():
+        clean_key = str(key).strip() or 'field'
+        full_key = f'{parent_key}{sep}{clean_key}' if parent_key else clean_key
+        if isinstance(value, dict):
+            if depth < MAX_JSON_DEPTH and value:
+                nested = _flatten_json_record(value, full_key, sep=sep, depth=depth + 1)
+                flat.update(nested)
+            elif not value:
+                flat[full_key] = None
+            else:
+                flat[full_key] = json.dumps(value, ensure_ascii=False)
+        elif isinstance(value, list):
+            if value:
+                flat[full_key] = json.dumps(value, ensure_ascii=False)
+            else:
+                flat[full_key] = None
+        else:
+            flat[full_key] = value
+    return flat
+
+
+def _discover_json_candidates_from_obj(parsed_json):
+    """
+    Find candidate tabular record sets inside a parsed JSON structure.
+    Returns a list of candidate dicts with raw record lists and structural metadata.
+    """
+    candidates = []
+
+    def _walk(node, path='$', depth=0):
+        if len(candidates) >= MAX_JSON_CANDIDATES or depth > MAX_JSON_DEPTH:
+            return
+        if isinstance(node, list):
+            dict_items = [item for item in node if isinstance(item, dict)]
+            if dict_items and len(dict_items) == len(node):
+                candidates.append({
+                    'path': path,
+                    'records': dict_items,
+                    'kind': 'array_of_objects',
+                })
+            elif dict_items and len(dict_items) > 0:
+                candidates.append({
+                    'path': path,
+                    'records': dict_items,
+                    'kind': 'mixed_array_filtered',
+                    'skipped_non_objects': len(node) - len(dict_items),
+                })
+        elif isinstance(node, dict):
+            # Prefer common data wrapper keys first for deterministic ordering
+            preferred = ['data', 'records', 'items', 'results', 'rows']
+            ordered_keys = [k for k in preferred if k in node] + [k for k in node.keys() if k not in preferred]
+            for key in ordered_keys:
+                child_path = str(key) if path == '$' else f'{path}.{key}'
+                _walk(node[key], child_path, depth + 1)
+
+    _walk(parsed_json, '$', 0)
+
+    # Single JSON object (1-row dataset) only if no array candidates exist inside
+    if not candidates and isinstance(parsed_json, dict) and parsed_json:
+        candidates.append({
+            'path': '$',
+            'records': [parsed_json],
+            'kind': 'single_object',
+        })
+
+    return candidates
+
+
+def normalize_json_records(records, extra_notes=None):
+    """Convert a list of JSON record dicts into (DataFrame, notes)."""
+    notes = list(extra_notes or [])
+    flattened_rows = [_flatten_json_record(rec) for rec in records if isinstance(rec, dict)]
+    if not flattened_rows:
+        return pd.DataFrame(), notes + ['Selected JSON structure contains no object records.']
+
+    all_keys = []
+    seen_keys = set()
+    has_nested_dict = any(
+        isinstance(v, dict) and bool(v)
+        for rec in records
+        if isinstance(rec, dict)
+        for v in rec.values()
+    )
+    has_nested_list = any(
+        isinstance(v, list) and bool(v)
+        for rec in records
+        if isinstance(rec, dict)
+        for v in rec.values()
+    )
+    for row in flattened_rows:
+        for k in row.keys():
+            if k not in seen_keys:
+                seen_keys.add(k)
+                all_keys.append(k)
+
+    inconsistent = any(set(row.keys()) != seen_keys for row in flattened_rows)
+    clean_headers, header_notes = _sanitize_headers(all_keys)
+
+    aligned_rows = []
+    for row in flattened_rows:
+        aligned_rows.append([row.get(orig_key, None) for orig_key in all_keys])
+
+    df = pd.DataFrame(aligned_rows, columns=clean_headers)
+
+    if has_nested_dict:
+        notes.append('Nested JSON object properties were flattened using dot notation (e.g., parent.child).')
+    if has_nested_list:
+        notes.append('Nested JSON array values within records were preserved as JSON text.')
+    if inconsistent:
+        notes.append('Inconsistent object keys across records were aligned using null values.')
+    notes.extend(header_notes)
+    return df, notes
+
+
+def _validate_json_bytes(raw_bytes):
+    """Validate uploaded JSON bytes safely using stdlib json (never eval)."""
+    if not raw_bytes:
+        return False, 'The uploaded JSON file is empty.'
+
+    if b'\x00' in raw_bytes[:65536]:
+        return False, 'Binary or NUL-byte content is not a valid JSON file.'
+
+    try:
+        text = raw_bytes.decode('utf-8-sig', errors='strict')
+    except UnicodeDecodeError:
+        return False, 'JSON files must be valid UTF-8 encoded text.'
+
+    if not text.strip():
+        return False, 'The uploaded JSON file is empty.'
+
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError as exc:
+        return False, f'Invalid JSON syntax: {exc.msg} (line {exc.lineno}, column {exc.colno}).'
+
+    if not isinstance(parsed, (list, dict)):
+        return False, 'Unsupported JSON root type. Upload a JSON array of objects or a structured JSON object.'
+
+    if len(parsed) == 0:
+        return False, 'The uploaded JSON structure is empty.'
+
+    candidates = _discover_json_candidates_from_obj(parsed)
+    if not candidates:
+        return False, (
+            'Unsupported JSON structure: no tabular array of objects or structured record object was found.'
+        )
+
+    usable = False
+    for cand in candidates:
+        df_cand, _ = normalize_json_records(cand['records'][:25])
+        if len(df_cand.columns) >= 2 and len(df_cand) >= 1:
+            usable = True
+            break
+
+    if not usable:
+        return False, (
+            'No usable tabular JSON record set was found. Each dataset must yield at least 2 columns and 1 record.'
+        )
+
+    return True, None
+
+
+def validate_uploaded_dataset(uploaded_file, max_size_bytes=MAX_UPLOAD_SIZE_BYTES):
+    """
+    Validate an uploaded Django file across CSV, XLSX, XLS, and JSON formats.
+    Returns (is_valid: bool, error_message: str | None, detected_format: str | None).
+    """
+    if not uploaded_file:
+        return False, 'Please choose a dataset file to upload.', None
+
+    fmt = detect_file_format(uploaded_file.name)
+    if not fmt:
+        return (
+            False,
+            'Unsupported file format. Supported formats are CSV (.csv), Excel (.xlsx, .xls), and JSON (.json).',
+            None,
+        )
+
+    if uploaded_file.size == 0:
+        return False, f'The uploaded .{fmt} file is empty.', fmt
+
+    if uploaded_file.size > max_size_bytes:
+        max_mb = max_size_bytes // (1024 * 1024)
+        return False, f'File size exceeds the {max_mb} MB limit.', fmt
+
+    try:
+        uploaded_file.seek(0)
+        if fmt == 'csv':
+            sample_bytes = uploaded_file.read(65536)
+            uploaded_file.seek(0)
+            ok, err = _validate_csv_bytes_content(sample_bytes)
+            return ok, err, fmt
+        raw_bytes = uploaded_file.read()
+        uploaded_file.seek(0)
+    except Exception:
+        return False, 'Unable to read the uploaded file.', fmt
+
+    if fmt == 'xlsx':
+        ok, err = _validate_xlsx_bytes(raw_bytes)
+    elif fmt == 'xls':
+        ok, err = _validate_xls_bytes(raw_bytes)
+    elif fmt == 'json':
+        ok, err = _validate_json_bytes(raw_bytes)
+    else:
+        ok, err = False, 'Unsupported file format.'
+
+    return ok, err, fmt
+
+
+def inspect_excel_sheets(file_path, source_format='xlsx', preview_rows=5):
+    """
+    Inspect every worksheet in an .xlsx or .xls workbook without executing formulas/macros.
+    Returns list of sheet summary dicts containing headers, row/col counts, usability,
+    ingestion notes, and preview rows.
+    """
+    summaries = []
+    if source_format == 'xlsx':
+        wb = None
+        try:
+            wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+            for sheet_name in wb.sheetnames:
+                ws = wb[sheet_name]
+                rows = _extract_xlsx_sheet_matrix(ws)
+                notes = []
+                if not rows:
+                    summaries.append({
+                        'name': sheet_name,
+                        'row_count': 0,
+                        'column_count': 0,
+                        'headers': [],
+                        'preview_rows': [],
+                        'is_usable': False,
+                        'notes': ['Worksheet is empty.'],
+                    })
+                    continue
+
+                df_sheet, header_notes = _rows_matrix_to_dataframe(rows)
+                notes.extend(header_notes)
+                uncached = _count_uncached_xlsx_formulas(file_path, sheet_name)
+                if uncached:
+                    notes.append(
+                        f'{uncached} formula cell(s) have no cached values and were imported as missing.'
+                    )
+
+                n_rows = int(len(df_sheet))
+                n_cols = int(len(df_sheet.columns))
+                is_usable = n_cols >= 2 and n_rows >= 1
+                if not is_usable:
+                    notes.append('Sheet needs at least 2 columns and 1 data row to be imported.')
+
+                preview_df = df_sheet.head(preview_rows).fillna('')
+                summaries.append({
+                    'name': sheet_name,
+                    'row_count': n_rows,
+                    'column_count': n_cols,
+                    'headers': [str(c) for c in df_sheet.columns],
+                    'preview_rows': preview_df.astype(str).to_dict(orient='records'),
+                    'is_usable': is_usable,
+                    'notes': notes,
+                })
+        finally:
+            if wb is not None:
+                try:
+                    wb.close()
+                except Exception:
+                    pass
+    elif source_format == 'xls':
+        wb = None
+        try:
+            wb = xlrd.open_workbook(file_path, on_demand=True)
+            for idx in range(wb.nsheets):
+                sheet = wb.sheet_by_index(idx)
+                rows, err_cells = _extract_xls_sheet_matrix(sheet, wb.datemode)
+                notes = []
+                if not rows:
+                    summaries.append({
+                        'name': sheet.name,
+                        'row_count': 0,
+                        'column_count': 0,
+                        'headers': [],
+                        'preview_rows': [],
+                        'is_usable': False,
+                        'notes': ['Worksheet is empty.'],
+                    })
+                    continue
+
+                df_sheet, header_notes = _rows_matrix_to_dataframe(rows)
+                notes.extend(header_notes)
+                if err_cells:
+                    notes.append(f'{err_cells} Excel error cell(s) were converted to missing values.')
+
+                n_rows = int(len(df_sheet))
+                n_cols = int(len(df_sheet.columns))
+                is_usable = n_cols >= 2 and n_rows >= 1
+                if not is_usable:
+                    notes.append('Sheet needs at least 2 columns and 1 data row to be imported.')
+
+                preview_df = df_sheet.head(preview_rows).fillna('')
+                summaries.append({
+                    'name': sheet.name,
+                    'row_count': n_rows,
+                    'column_count': n_cols,
+                    'headers': [str(c) for c in df_sheet.columns],
+                    'preview_rows': preview_df.astype(str).to_dict(orient='records'),
+                    'is_usable': is_usable,
+                    'notes': notes,
+                })
+        finally:
+            if wb is not None:
+                try:
+                    wb.release_resources()
+                except Exception:
+                    pass
+    else:
+        raise ValueError(f'Unsupported Excel format: {source_format}')
+
+    return summaries
+
+
+def read_excel_file(file_path, sheet_name=None, source_format='xlsx'):
+    """
+    Read a specific worksheet from an .xlsx or .xls workbook into (DataFrame, notes).
+    Auto-selects the first usable sheet when sheet_name is omitted.
+    """
+    notes = []
+    if source_format == 'xlsx':
+        wb = None
+        try:
+            wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+            target_sheet = sheet_name or (wb.sheetnames[0] if wb.sheetnames else '')
+            if target_sheet not in wb.sheetnames:
+                raise ValueError(f'Selected worksheet "{target_sheet}" does not exist in workbook.')
+            rows = _extract_xlsx_sheet_matrix(wb[target_sheet])
+        finally:
+            if wb is not None:
+                try:
+                    wb.close()
+                except Exception:
+                    pass
+
+        df, header_notes = _rows_matrix_to_dataframe(rows)
+        notes.extend(header_notes)
+        uncached = _count_uncached_xlsx_formulas(file_path, target_sheet)
+        if uncached:
+            notes.append(f'{uncached} formula cell(s) have no cached values and were imported as missing.')
+    elif source_format == 'xls':
+        wb = None
+        try:
+            wb = xlrd.open_workbook(file_path, on_demand=True)
+            available_names = wb.sheet_names()
+            target_sheet = sheet_name or (available_names[0] if available_names else '')
+            if target_sheet not in available_names:
+                raise ValueError(f'Selected worksheet "{target_sheet}" does not exist in workbook.')
+            sheet = wb.sheet_by_name(target_sheet)
+            rows, err_cells = _extract_xls_sheet_matrix(sheet, wb.datemode)
+        finally:
+            if wb is not None:
+                try:
+                    wb.release_resources()
+                except Exception:
+                    pass
+
+        df, header_notes = _rows_matrix_to_dataframe(rows)
+        notes.extend(header_notes)
+        if err_cells:
+            notes.append(f'{err_cells} Excel error cell(s) were converted to missing values.')
+    else:
+        raise ValueError(f'Unsupported Excel format: {source_format}')
+
+    if len(df.columns) < 2 or df.empty:
+        raise ValueError(f'Worksheet "{target_sheet}" must have at least 2 columns and 1 data row.')
+
+    return df, notes
+
+
+def inspect_json_candidates(file_path, preview_rows=5):
+    """
+    Inspect JSON file structure and return candidate tabular record paths with
+    row counts, flattened headers, usability status, notes, and preview rows.
+    """
+    with open(file_path, 'r', encoding='utf-8-sig') as fh:
+        parsed = json.load(fh)
+
+    raw_candidates = _discover_json_candidates_from_obj(parsed)
+    summaries = []
+    for cand in raw_candidates:
+        extra_notes = []
+        if cand['kind'] == 'single_object':
+            extra_notes.append('Single JSON object converted into a 1-row normalized table.')
+        elif cand['kind'] == 'mixed_array_filtered':
+            extra_notes.append(
+                f"{cand['skipped_non_objects']} non-object element(s) in the JSON array were ignored."
+            )
+
+        df_cand, notes = normalize_json_records(cand['records'], extra_notes=extra_notes)
+        n_rows = int(len(df_cand))
+        n_cols = int(len(df_cand.columns))
+        is_usable = n_cols >= 2 and n_rows >= 1
+        if not is_usable:
+            notes.append('Record path needs at least 2 columns and 1 record to be imported.')
+
+        preview_df = df_cand.head(preview_rows).fillna('')
+        summaries.append({
+            'path': cand['path'],
+            'label': 'Root JSON Structure ($)' if cand['path'] == '$' else cand['path'],
+            'kind': cand['kind'],
+            'row_count': n_rows,
+            'column_count': n_cols,
+            'headers': [str(c) for c in df_cand.columns],
+            'preview_rows': preview_df.astype(str).to_dict(orient='records'),
+            'is_usable': is_usable,
+            'notes': notes,
+        })
+
+    return summaries
+
+
+def read_json_file(file_path, json_path='$'):
+    """Read and normalize a selected candidate JSON record path into (DataFrame, notes)."""
+    with open(file_path, 'r', encoding='utf-8-sig') as fh:
+        parsed = json.load(fh)
+
+    candidates = _discover_json_candidates_from_obj(parsed)
+    selected = None
+    target_path = json_path or '$'
+    for cand in candidates:
+        if cand['path'] == target_path:
+            selected = cand
+            break
+
+    if selected is None:
+        raise ValueError(f'Selected JSON record path "{target_path}" was not found.')
+
+    extra_notes = []
+    if selected['kind'] == 'single_object':
+        extra_notes.append('Single JSON object converted into a 1-row normalized table.')
+    elif selected['kind'] == 'mixed_array_filtered':
+        extra_notes.append(
+            f"{selected['skipped_non_objects']} non-object element(s) in the JSON array were ignored."
+        )
+
+    df, notes = normalize_json_records(selected['records'], extra_notes=extra_notes)
+    if len(df.columns) < 2 or df.empty:
+        raise ValueError(f'JSON record path "{target_path}" must yield at least 2 columns and 1 record.')
+
+    return df, notes
+
+
+def normalize_dataset_to_internal_format(df, source_base_name='dataset'):
+    """
+    Convert any validated DataFrame (from XLSX, XLS, or JSON) into InsightLab's
+    standardized UTF-8 CSV byte representation so all downstream modules share one pipeline.
+    Returns (csv_bytes: bytes, normalized_filename: str).
+    """
+    work_df = df.copy()
+    clean_cols, _ = _sanitize_headers(list(work_df.columns))
+    work_df.columns = clean_cols
+    work_df = work_df.dropna(how='all')
+
+    stem = os.path.splitext(sanitize_original_filename(source_base_name))[0] or 'dataset'
+    normalized_filename = f'{stem}_normalized.csv'
+    buf = io.BytesIO()
+    work_df.to_csv(buf, index=False, encoding='utf-8-sig')
+    return buf.getvalue(), normalized_filename
 
 
 def read_raw_csv(file_path):

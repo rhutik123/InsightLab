@@ -21,7 +21,7 @@ def _load_active_general_df(dataset, version='cleaned'):
     returning (df, schema, used_version).
     """
     use_cleaned = version == 'cleaned' and dataset.has_cleaned_version and dataset.cleaned_file
-    file_path = dataset.cleaned_file.path if use_cleaned else dataset.original_file.path
+    file_path = dataset.cleaned_file.path if use_cleaned else dataset.source_file_path
     used_version = 'cleaned' if use_cleaned else 'original'
 
     raw_df = read_raw_csv(file_path)
