@@ -6,19 +6,20 @@
 
 {% block content %}
 {% if not datasets %}
-<div class="il-empty">
-    <h3 class="il-title text-base">No mapped datasets available</h3>
-    <p class="il-subtitle mt-1 text-sm">Upload and configure a CSV, Excel, or JSON dataset to run exploratory data analysis.</p>
+<div class="il-empty py-12">
+    <p class="il-kicker">No Data Available</p>
+    <h3 class="il-editorial mt-1 text-xl font-semibold" style="color: var(--text-primary);">No mapped datasets available</h3>
+    <p class="il-subtitle mt-1.5 text-sm">Upload and configure a CSV, Excel, or JSON dataset to run exploratory data analysis.</p>
     <a href="{% url 'datasets:upload' %}" class="il-btn il-btn-primary mt-5">
         Upload Dataset
     </a>
 </div>
 {% else %}
 <!-- Filter Controls -->
-<form method="get" class="il-card mb-6 p-5">
+<form method="get" class="il-panel mb-6 p-5">
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6 items-end">
         <div>
-            <label for="id_dataset" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Dataset</label>
+            <label for="id_dataset" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">Dataset</label>
             <select id="id_dataset" name="dataset" class="block w-full">
                 {% for ds in datasets %}
                     <option value="{{ ds.pk }}" {% if selected_dataset.pk == ds.pk %}selected{% endif %}>{{ ds.name }}</option>
@@ -27,7 +28,7 @@
         </div>
 
         <div>
-            <label for="id_target" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Numerical Target</label>
+            <label for="id_target" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">Numerical Target</label>
             <select id="id_target" name="target" class="block w-full">
                 {% for col in numeric_cols %}
                     <option value="{{ col }}" {% if selected_target == col %}selected{% endif %}>{{ col }}</option>
@@ -36,7 +37,7 @@
         </div>
 
         <div>
-            <label for="id_group_col" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Group By Column</label>
+            <label for="id_group_col" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">Group By Column</label>
             <select id="id_group_col" name="group_col" class="block w-full">
                 <option value="" {% if not selected_group_col %}selected{% endif %}>-- None --</option>
                 {% for col in categorical_cols %}
@@ -46,7 +47,7 @@
         </div>
 
         <div>
-            <label for="id_product" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Segment Filter</label>
+            <label for="id_product" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">Segment Filter</label>
             <select id="id_product" name="product" class="block w-full">
                 <option value="__ALL__" {% if selected_product == '__ALL__' %}selected{% endif %}>All Records</option>
                 {% if eda and eda.all_groups %}
@@ -58,7 +59,7 @@
         </div>
 
         <div>
-            <label for="id_version" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Version</label>
+            <label for="id_version" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">Version</label>
             <select id="id_version" name="version" class="block w-full">
                 <option value="cleaned" {% if used_version == 'cleaned' %}selected{% endif %}>Cleaned (if available)</option>
                 <option value="original" {% if used_version == 'original' %}selected{% endif %}>Original Uploaded</option>
@@ -74,41 +75,47 @@
 </form>
 
 {% if eda and eda.has_data %}
-<!-- KPI Row -->
-<section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-6">
-    <div class="il-card p-5">
+<!-- Descriptive Statistics Strip -->
+<section class="il-strip mb-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x" style="border-color: var(--border-default);">
+    <div class="p-5">
         <p class="il-kpi-label">Total {{ eda.target_col }}</p>
         <p class="il-kpi-value mt-2">{{ eda.summary.total_target|floatformat:2 }}</p>
-        <p class="il-muted mt-1 text-xs">Mean: {{ eda.summary.avg_target|floatformat:2 }}</p>
+        <p class="il-tech il-muted mt-1.5 text-xs">Mean: {{ eda.summary.avg_target|floatformat:2 }}</p>
     </div>
-    <div class="il-card p-5">
+    <div class="p-5">
         <p class="il-kpi-label">Median {{ eda.target_col }}</p>
         <p class="il-kpi-value mt-2">{{ eda.summary.median_target|floatformat:2 }}</p>
-        <p class="il-muted mt-1 text-xs">Std Dev: {{ eda.summary.std_target|floatformat:2 }}</p>
+        <p class="il-tech il-muted mt-1.5 text-xs">Std Dev: {{ eda.summary.std_target|floatformat:2 }}</p>
     </div>
-    <div class="il-card p-5">
+    <div class="p-5">
         <p class="il-kpi-label">{% if eda.has_date %}Active Periods{% else %}Records Analyzed{% endif %}</p>
         <p class="il-kpi-value mt-2">{{ eda.summary.active_days }}</p>
-        <p class="il-muted mt-1 text-xs">{{ eda.summary.record_count }} source row(s)</p>
+        <p class="il-tech il-muted mt-1.5 text-xs">{{ eda.summary.record_count }} source row(s)</p>
     </div>
-    <div class="il-card p-5">
+    <div class="p-5">
         <p class="il-kpi-label">Observation Window</p>
-        <p class="il-title mt-2 text-base">
+        <p class="il-editorial mt-2 text-base font-semibold" style="color: var(--text-primary);">
             {% if eda.has_date %}{{ eda.summary.date_start }} &rarr; {{ eda.summary.date_end }}{% else %}Cross-sectional{% endif %}
         </p>
-        <p class="il-muted mt-1 text-xs">Using {{ used_version }} data</p>
+        <p class="il-tech il-muted mt-1.5 text-xs">Using {{ used_version }} data</p>
     </div>
 </section>
 
 {% if eda.has_date %}
 <!-- Daily & Weekly Trends -->
 <section class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
-    <div class="il-card p-6">
-        <h3 class="il-title text-base mb-3">Daily {{ eda.target_col }} Trend</h3>
+    <div class="il-panel p-6">
+        <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+            <p class="il-kicker">Temporal Resolution &bull; 1D</p>
+            <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Daily {{ eda.target_col }} Trend</h3>
+        </div>
         <div class="h-64"><canvas id="edaDailyChart"></canvas></div>
     </div>
-    <div class="il-card p-6">
-        <h3 class="il-title text-base mb-3">Weekly {{ eda.target_col }} Trend</h3>
+    <div class="il-panel p-6">
+        <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+            <p class="il-kicker">Temporal Resolution &bull; 7D</p>
+            <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Weekly {{ eda.target_col }} Trend</h3>
+        </div>
         {% if eda.weekly_trend.available %}
             <div class="h-64"><canvas id="edaWeeklyChart"></canvas></div>
         {% else %}
@@ -121,8 +128,11 @@
 
 <!-- Monthly & Yearly Trends -->
 <section class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
-    <div class="il-card p-6">
-        <h3 class="il-title text-base mb-3">Monthly {{ eda.target_col }} Trend</h3>
+    <div class="il-panel p-6">
+        <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+            <p class="il-kicker">Monthly Aggregate</p>
+            <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Monthly {{ eda.target_col }} Trend</h3>
+        </div>
         {% if eda.monthly_trend.available %}
             <div class="h-64"><canvas id="edaMonthlyChart"></canvas></div>
         {% else %}
@@ -131,8 +141,11 @@
             </div>
         {% endif %}
     </div>
-    <div class="il-card p-6">
-        <h3 class="il-title text-base mb-3">Yearly {{ eda.target_col }} Trend</h3>
+    <div class="il-panel p-6">
+        <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+            <p class="il-kicker">Annual Aggregate</p>
+            <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Yearly {{ eda.target_col }} Trend</h3>
+        </div>
         {% if eda.yearly_trend.available %}
             <div class="h-64"><canvas id="edaYearlyChart"></canvas></div>
         {% else %}
@@ -146,10 +159,13 @@
 
 <!-- Group Comparison & Distribution -->
 <section class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
-    <div class="il-card p-6">
-        <h3 class="il-title text-base mb-3">
-            {% if eda.group_comparison.available %}{{ eda.target_col }} by {{ eda.group_col }}{% else %}Segment Comparison{% endif %}
-        </h3>
+    <div class="il-panel p-6">
+        <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+            <p class="il-kicker">Categorical Slice</p>
+            <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">
+                {% if eda.group_comparison.available %}{{ eda.target_col }} by {{ eda.group_col }}{% else %}Segment Comparison{% endif %}
+            </h3>
+        </div>
         {% if eda.group_comparison.available %}
             <div class="h-64"><canvas id="edaGroupChart"></canvas></div>
         {% else %}
@@ -158,8 +174,11 @@
             </div>
         {% endif %}
     </div>
-    <div class="il-card p-6">
-        <h3 class="il-title text-base mb-3">{{ eda.target_col }} Distribution</h3>
+    <div class="il-panel p-6">
+        <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+            <p class="il-kicker">Histogram</p>
+            <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">{{ eda.target_col }} Distribution</h3>
+        </div>
         {% if eda.distribution.has_chart %}
             <div class="h-64"><canvas id="edaDistChart"></canvas></div>
         {% else %}
@@ -173,9 +192,12 @@
 {% if eda.has_date %}
 <!-- Seasonality Row -->
 <section class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
-    <div class="il-card p-6">
-        <h3 class="il-title text-base mb-1">Day-of-Week Pattern</h3>
-        <p class="il-muted text-xs mb-3">Mean {{ eda.target_col }} across weekdays.</p>
+    <div class="il-panel p-6">
+        <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+            <p class="il-kicker">Weekly Cadence</p>
+            <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Day-of-Week Pattern</h3>
+            <p class="il-muted text-xs mt-0.5">Mean {{ eda.target_col }} across weekdays.</p>
+        </div>
         {% if eda.weekday_pattern.available %}
             <div class="h-64"><canvas id="edaWeekdayChart"></canvas></div>
         {% else %}
@@ -185,9 +207,12 @@
         {% endif %}
     </div>
 
-    <div class="il-card p-6">
-        <h3 class="il-title text-base mb-1">Seasonal Decomposition (7-Day Component)</h3>
-        <p class="il-muted text-xs mb-3">{{ eda.seasonal_decomposition.note }}</p>
+    <div class="il-panel p-6">
+        <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+            <p class="il-kicker">Signal Decomposition</p>
+            <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Seasonal Decomposition (7-Day Component)</h3>
+            <p class="il-muted text-xs mt-0.5">{{ eda.seasonal_decomposition.note }}</p>
+        </div>
         {% if eda.seasonal_decomposition.available %}
             <div class="h-64"><canvas id="edaDecompChart"></canvas></div>
         {% else %}
@@ -201,13 +226,16 @@
 
 <!-- Numeric Correlations -->
 {% if eda.correlations %}
-<div class="il-card p-6 mb-6">
-    <h3 class="il-title text-base mb-3">Numerical Feature Correlations (Pearson r)</h3>
+<div class="il-panel p-6 mb-6">
+    <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+        <p class="il-kicker">Bivariate Matrix</p>
+        <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Numerical Feature Correlations (Pearson r)</h3>
+    </div>
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {% for c in eda.correlations %}
         <div class="il-card-subtle px-4 py-3 text-xs flex items-center justify-between gap-2">
-            <span class="font-medium truncate" style="color: var(--text-primary);">{{ c.col_a }} &harr; {{ c.col_b }}</span>
-            <span class="il-badge il-badge-indigo font-mono shrink-0">{{ c.pearson_r }}</span>
+            <span class="il-tech font-medium truncate" style="color: var(--text-primary);">{{ c.col_a }} &harr; {{ c.col_b }}</span>
+            <span class="il-badge il-badge-indigo shrink-0">{{ c.pearson_r }}</span>
         </div>
         {% endfor %}
     </div>
@@ -217,8 +245,9 @@
 <!-- Top & Lowest Segments -->
 {% if eda.has_group and eda.best_groups %}
 <section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <div class="il-card p-6">
-        <h3 class="il-title text-base mb-3">Top {{ eda.group_col }} Segments (By {{ eda.target_col }})</h3>
+    <div class="il-panel p-6">
+        <p class="il-kicker">Highest Contributing</p>
+        <h3 class="il-editorial mt-0.5 text-base font-semibold mb-3" style="color: var(--text-primary);">Top {{ eda.group_col }} Segments (By {{ eda.target_col }})</h3>
         <div class="il-table-wrap">
             <table class="il-table">
                 <thead>
@@ -233,9 +262,9 @@
                     {% for p in eda.best_groups %}
                     <tr>
                         <td class="font-medium" style="color: var(--text-primary);">{{ p.group }}</td>
-                        <td>{{ p.total_target|floatformat:2 }}</td>
-                        <td>{{ p.avg_target|floatformat:2 }}</td>
-                        <td>{{ p.record_count }}</td>
+                        <td class="il-tech">{{ p.total_target|floatformat:2 }}</td>
+                        <td class="il-tech">{{ p.avg_target|floatformat:2 }}</td>
+                        <td class="il-tech">{{ p.record_count }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -243,8 +272,9 @@
         </div>
     </div>
 
-    <div class="il-card p-6">
-        <h3 class="il-title text-base mb-3">Lowest {{ eda.group_col }} Segments (By {{ eda.target_col }})</h3>
+    <div class="il-panel p-6">
+        <p class="il-kicker">Lowest Contributing</p>
+        <h3 class="il-editorial mt-0.5 text-base font-semibold mb-3" style="color: var(--text-primary);">Lowest {{ eda.group_col }} Segments (By {{ eda.target_col }})</h3>
         <div class="il-table-wrap">
             <table class="il-table">
                 <thead>
@@ -259,9 +289,9 @@
                     {% for p in eda.lowest_groups %}
                     <tr>
                         <td class="font-medium" style="color: var(--text-primary);">{{ p.group }}</td>
-                        <td>{{ p.total_target|floatformat:2 }}</td>
-                        <td>{{ p.avg_target|floatformat:2 }}</td>
-                        <td>{{ p.record_count }}</td>
+                        <td class="il-tech">{{ p.total_target|floatformat:2 }}</td>
+                        <td class="il-tech">{{ p.avg_target|floatformat:2 }}</td>
+                        <td class="il-tech">{{ p.record_count }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -271,7 +301,7 @@
 </section>
 {% endif %}
 {% elif eda %}
-<div class="il-card p-6 text-sm" style="color: var(--text-secondary);">
+<div class="il-panel p-6 text-sm" style="color: var(--text-secondary);">
     {{ eda.message }}
 </div>
 {% endif %}
@@ -297,9 +327,11 @@ if (eda && eda.has_data && window.InsightLabCharts) {
                     ilRole: role,
                     borderColor: color,
                     backgroundColor: softBg,
+                    borderWidth: 2,
                     fill: true,
-                    tension: 0.25,
-                    pointRadius: 1.5
+                    tension: 0.22,
+                    pointRadius: 1.5,
+                    pointHoverRadius: 4
                 }]
             },
             options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 8 } } } }
@@ -311,7 +343,7 @@ if (eda && eda.has_data && window.InsightLabCharts) {
         if (!el) return;
         window.InsightLabCharts.create(el, {
             type: 'bar',
-            data: { labels, datasets: [{ label, data: values, ilRole: role, backgroundColor: color, borderRadius: 5 }] },
+            data: { labels, datasets: [{ label, data: values, ilRole: role, backgroundColor: color, borderRadius: 3 }] },
             options: { responsive: true, maintainAspectRatio: false }
         });
     };
@@ -345,8 +377,8 @@ if (eda && eda.has_data && window.InsightLabCharts) {
                 data: {
                     labels: eda.seasonal_decomposition.dates,
                     datasets: [
-                        { label: 'Trend Component', data: eda.seasonal_decomposition.trend, ilRole: 'actual-line', borderColor: pal.actual, tension: 0.25, pointRadius: 0 },
-                        { label: 'Seasonal Component', data: eda.seasonal_decomposition.seasonal, ilRole: 'primary-line', borderColor: pal.indigo, tension: 0.25, pointRadius: 0 }
+                        { label: 'Trend Component', data: eda.seasonal_decomposition.trend, ilRole: 'actual-line', borderColor: pal.actual, borderWidth: 2, tension: 0.22, pointRadius: 0 },
+                        { label: 'Seasonal Component', data: eda.seasonal_decomposition.seasonal, ilRole: 'primary-line', borderColor: pal.indigo, borderWidth: 1.8, tension: 0.22, pointRadius: 0 }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 8 } } } }

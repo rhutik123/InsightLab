@@ -5,13 +5,14 @@
 {% block page_heading %}Account Settings{% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2 items-start">
     <!-- Profile Form -->
-    <div class="il-card p-6">
-        <div class="flex items-start justify-between gap-3">
+    <div class="il-panel p-6">
+        <div class="flex items-start justify-between gap-3 pb-4 border-b" style="border-color: var(--border-default);">
             <div>
-                <h2 class="il-title text-base">Profile Information</h2>
-                <p class="il-subtitle mt-1 text-sm">Update your display name and email address.</p>
+                <p class="il-kicker">Researcher Identity</p>
+                <h2 class="il-editorial mt-0.5 text-lg font-semibold" style="color: var(--text-primary);">Profile Information</h2>
+                <p class="il-subtitle mt-1 text-xs">Update your display name and email address.</p>
             </div>
             <span class="il-badge il-badge-indigo">Account</span>
         </div>
@@ -21,7 +22,7 @@
             <input type="hidden" name="action" value="update_profile">
 
             <div>
-                <label for="{{ profile_form.first_name.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ profile_form.first_name.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     First name
                 </label>
                 {{ profile_form.first_name }}
@@ -31,7 +32,7 @@
             </div>
 
             <div>
-                <label for="{{ profile_form.last_name.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ profile_form.last_name.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     Last name
                 </label>
                 {{ profile_form.last_name }}
@@ -41,7 +42,7 @@
             </div>
 
             <div>
-                <label for="{{ profile_form.email.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ profile_form.email.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     Email address
                 </label>
                 {{ profile_form.email }}
@@ -50,18 +51,21 @@
                 {% endif %}
             </div>
 
-            <button type="submit" class="il-btn il-btn-primary">
-                Save profile
-            </button>
+            <div class="pt-2">
+                <button type="submit" class="il-btn il-btn-primary">
+                    Save profile
+                </button>
+            </div>
         </form>
     </div>
 
     <!-- Password Change Form -->
-    <div class="il-card p-6">
-        <div class="flex items-start justify-between gap-3">
+    <div class="il-panel p-6">
+        <div class="flex items-start justify-between gap-3 pb-4 border-b" style="border-color: var(--border-default);">
             <div>
-                <h2 class="il-title text-base">Change Password</h2>
-                <p class="il-subtitle mt-1 text-sm">Use a strong password that passes Django&apos;s security validators.</p>
+                <p class="il-kicker">Credentials</p>
+                <h2 class="il-editorial mt-0.5 text-lg font-semibold" style="color: var(--text-primary);">Change Password</h2>
+                <p class="il-subtitle mt-1 text-xs">Use a strong password that passes Django&apos;s security validators.</p>
             </div>
             <span class="il-badge il-badge-teal">Security</span>
         </div>
@@ -71,7 +75,7 @@
             <input type="hidden" name="action" value="change_password">
 
             <div>
-                <label for="{{ password_form.old_password.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ password_form.old_password.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     Current password
                 </label>
                 {{ password_form.old_password }}
@@ -81,7 +85,7 @@
             </div>
 
             <div>
-                <label for="{{ password_form.new_password1.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ password_form.new_password1.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     New password
                 </label>
                 {{ password_form.new_password1 }}
@@ -91,7 +95,7 @@
             </div>
 
             <div>
-                <label for="{{ password_form.new_password2.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ password_form.new_password2.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     Confirm new password
                 </label>
                 {{ password_form.new_password2 }}
@@ -100,9 +104,11 @@
                 {% endif %}
             </div>
 
-            <button type="submit" class="il-btn il-btn-secondary">
-                Update password
-            </button>
+            <div class="pt-2">
+                <button type="submit" class="il-btn il-btn-secondary">
+                    Update password
+                </button>
+            </div>
         </form>
     </div>
 </div>

@@ -5,31 +5,17 @@
 {% block page_heading %}Upload Dataset{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl">
-    <div class="il-card p-6 sm:p-8">
-        <div class="flex items-start justify-between gap-3">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
+    <div class="lg:col-span-7 il-panel p-6 sm:p-8">
+        <div class="flex items-start justify-between gap-3 pb-4 border-b" style="border-color: var(--border-default);">
             <div>
-                <h2 class="il-title text-base">Upload Structured Dataset</h2>
+                <p class="il-kicker">Data Ingestion</p>
+                <h2 class="il-editorial mt-1 text-xl font-semibold" style="color: var(--text-primary);">Upload Structured Dataset</h2>
                 <p class="il-subtitle mt-1 text-sm">
-                    Supported formats: <strong>CSV (.csv)</strong>, <strong>Excel (.xlsx, .xls)</strong>, and <strong>JSON (.json)</strong> (up to 15 MB, minimum 2 columns and 1 data row). Multi-sheet workbooks and multi-array JSON files prompt you to choose which collection to import.
+                    Supported formats: <strong>CSV (.csv)</strong>, <strong>Excel (.xlsx, .xls)</strong>, and <strong>JSON (.json)</strong>. Multi-sheet workbooks and multi-array JSON files prompt you to choose which collection to import.
                 </p>
             </div>
             <span class="il-badge il-badge-indigo shrink-0">Max 15 MB</span>
-        </div>
-
-        <div class="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-3 text-xs">
-            <div class="il-card-subtle p-3">
-                <strong style="color: var(--text-primary);">CSV (.csv)</strong>
-                <p class="il-muted mt-0.5">Direct tabular text with UTF-8 / Latin-1 fallback</p>
-            </div>
-            <div class="il-card-subtle p-3">
-                <strong style="color: var(--text-primary);">Excel (.xlsx, .xls)</strong>
-                <p class="il-muted mt-0.5">Read-only cached values &amp; worksheet selector (200k rows &times; 250 cols max)</p>
-            </div>
-            <div class="il-card-subtle p-3">
-                <strong style="color: var(--text-primary);">JSON (.json)</strong>
-                <p class="il-muted mt-0.5">Arrays or objects with dot-notation flattening &amp; path selector</p>
-            </div>
         </div>
 
         <form method="post" enctype="multipart/form-data" class="mt-6 space-y-5" novalidate>
@@ -42,7 +28,7 @@
             {% endif %}
 
             <div>
-                <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ form.name.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider mb-1.5 il-tech" style="color: var(--text-secondary);">
                     Dataset Name
                 </label>
                 {{ form.name }}
@@ -52,14 +38,14 @@
             </div>
 
             <div>
-                <label for="{{ form.dataset_type.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ form.dataset_type.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider mb-1.5 il-tech" style="color: var(--text-secondary);">
                     {{ form.dataset_type.label }}
                 </label>
                 {{ form.dataset_type }}
             </div>
 
             <div>
-                <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ form.description.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider mb-1.5 il-tech" style="color: var(--text-secondary);">
                     Description (optional)
                 </label>
                 {{ form.description }}
@@ -68,20 +54,20 @@
                 {% endif %}
             </div>
 
-            <div>
-                <label for="{{ form.original_file.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+            <div class="il-card-subtle p-4">
+                <label for="{{ form.original_file.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider mb-2 il-tech" style="color: var(--text-secondary);">
                     Dataset File (.csv, .xlsx, .xls, .json)
                 </label>
                 {{ form.original_file }}
-                <p class="il-muted mt-1.5 text-xs">
+                <p class="il-muted mt-2 text-xs">
                     Your original file is preserved untouched; Excel and JSON files are normalized cleanly for analytics and forecasting.
                 </p>
                 {% if form.original_file.errors %}
-                    <p class="mt-1 text-xs" style="color: var(--status-danger-text);">{{ form.original_file.errors.0 }}</p>
+                    <p class="mt-1.5 text-xs font-medium" style="color: var(--status-danger-text);">{{ form.original_file.errors.0 }}</p>
                 {% endif %}
             </div>
 
-            <div class="flex flex-wrap items-center gap-3 pt-2">
+            <div class="flex flex-wrap items-center gap-3 pt-2 border-t" style="border-color: var(--border-default);">
                 <button type="submit" class="il-btn il-btn-primary">
                     Upload &amp; Inspect Schema
                 </button>
@@ -91,5 +77,44 @@
             </div>
         </form>
     </div>
+
+    <!-- Ingestion Specification Reference -->
+    <aside class="lg:col-span-5 il-panel p-6 space-y-5">
+        <div class="pb-3 border-b" style="border-color: var(--border-default);">
+            <p class="il-kicker">Format Specifications</p>
+            <h3 class="il-editorial mt-1 text-base font-semibold" style="color: var(--text-primary);">Supported Tabular Formats</h3>
+        </div>
+
+        <div class="divide-y text-xs" style="border-color: var(--border-default);">
+            <div class="py-3 first:pt-0">
+                <div class="flex items-center justify-between">
+                    <strong class="il-tech" style="color: var(--text-primary);">CSV (.csv)</strong>
+                    <span class="il-badge il-badge-teal">UTF-8 / Latin-1</span>
+                </div>
+                <p class="il-muted mt-1 leading-relaxed">Direct tabular text with automatic encoding detection and minimum 2 columns &times; 1 data row check.</p>
+            </div>
+            <div class="py-3">
+                <div class="flex items-center justify-between">
+                    <strong class="il-tech" style="color: var(--text-primary);">Excel (.xlsx, .xls)</strong>
+                    <span class="il-badge il-badge-muted">200k &times; 250 max</span>
+                </div>
+                <p class="il-muted mt-1 leading-relaxed">Read-only cached values with multi-sheet selector. Macro-enabled and encrypted workbooks are rejected.</p>
+            </div>
+            <div class="py-3 last:pb-0">
+                <div class="flex items-center justify-between">
+                    <strong class="il-tech" style="color: var(--text-primary);">JSON (.json)</strong>
+                    <span class="il-badge il-badge-muted">Up to 25 paths</span>
+                </div>
+                <p class="il-muted mt-1 leading-relaxed">Record arrays or nested objects with dot-notation flattening and interactive collection path selection.</p>
+            </div>
+        </div>
+
+        <div class="il-card-muted p-4 text-xs">
+            <p class="il-kicker">Workflow Note</p>
+            <p class="il-subtitle mt-1 leading-relaxed">
+                After upload, InsightLab inspects column types (<span class="il-tech">datetime</span>, <span class="il-tech">numeric</span>, <span class="il-tech">categorical</span>) and guides you through schema mapping before profiling.
+            </p>
+        </div>
+    </aside>
 </div>
 {% endblock %}

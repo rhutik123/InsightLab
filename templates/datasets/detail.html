@@ -2,10 +2,11 @@
 
 {% block title %}{{ dataset.name }} — Dataset Profile | InsightLab{% endblock %}
 {% block breadcrumb %}My Datasets / {{ dataset.name }}{% endblock %}
-{% block page_heading %}Dataset Profile: {{ dataset.name }}{% endblock %}
+{% block page_heading %}Dataset Inspection: {{ dataset.name }}{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+<!-- Scientific Report Masthead & Actions -->
+<div class="mb-6 pb-5 border-b flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between" style="border-color: var(--border-default);">
     <div class="flex flex-wrap items-center gap-2">
         <span class="il-badge il-badge-muted">
             {{ dataset.get_dataset_type_display }}
@@ -16,14 +17,16 @@
             {% if dataset.selected_json_path %} &bull; Path: {{ dataset.selected_json_path }}{% endif %}
         </span>
         {% if dataset.has_cleaned_version %}
-            <a href="?version=cleaned"
-               class="il-btn il-btn-sm {% if showing_cleaned %}il-btn-primary{% else %}il-btn-secondary{% endif %}">
-                Cleaned Version
-            </a>
-            <a href="?version=original"
-               class="il-btn il-btn-sm {% if not showing_cleaned %}il-btn-primary{% else %}il-btn-secondary{% endif %}">
-                Original Uploaded Version
-            </a>
+            <div class="inline-flex items-center gap-1.5 pl-2 border-l" style="border-color: var(--border-strong);">
+                <a href="?version=cleaned"
+                   class="il-btn il-btn-sm {% if showing_cleaned %}il-btn-primary{% else %}il-btn-secondary{% endif %}">
+                    Cleaned Version
+                </a>
+                <a href="?version=original"
+                   class="il-btn il-btn-sm {% if not showing_cleaned %}il-btn-primary{% else %}il-btn-secondary{% endif %}">
+                    Original Uploaded Version
+                </a>
+            </div>
         {% endif %}
     </div>
 
@@ -57,63 +60,65 @@
 </div>
 {% endif %}
 
-<!-- Summary Cards -->
-<section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-6">
-    <div class="il-card p-5">
+<!-- Editorial Summary Strip -->
+<section class="il-strip mb-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x" style="border-color: var(--border-default);">
+    <div class="p-5">
         <p class="il-kpi-label">Rows &amp; Columns</p>
         <p class="il-kpi-value mt-2">{{ profile.row_count|default:0 }}</p>
-        <p class="il-muted mt-1 text-xs">{{ profile.col_count|default:0 }} columns &bull; {{ profile.numeric_col_count|default:0 }} numeric, {{ profile.categorical_col_count|default:0 }} categorical</p>
+        <p class="il-tech il-muted mt-1.5 text-xs">{{ profile.col_count|default:0 }} columns &bull; {{ profile.numeric_col_count|default:0 }} numeric, {{ profile.categorical_col_count|default:0 }} categorical</p>
     </div>
 
-    <div class="il-card p-5">
+    <div class="p-5">
         <p class="il-kpi-label">Date Range</p>
-        <p class="il-title mt-2 text-base">
+        <p class="il-editorial mt-2 text-base font-semibold" style="color: var(--text-primary);">
             {% if profile.date_min %}{{ profile.date_min }} &rarr; {{ profile.date_max }}{% else %}No date column mapped{% endif %}
         </p>
-        <p class="il-muted mt-1 text-xs">
+        <p class="il-tech il-muted mt-1.5 text-xs">
             {% if profile.primary_date_column %}{{ profile.invalid_dates_count|default:0 }} invalid date row(s){% else %}Cross-sectional / tabular dataset{% endif %}
         </p>
     </div>
 
-    <div class="il-card p-5">
+    <div class="p-5">
         <p class="il-kpi-label">Primary Target ({{ profile.primary_target_column|default:"—" }})</p>
         <p class="il-kpi-value mt-2">{{ profile.total_revenue|floatformat:2 }}</p>
-        <p class="il-muted mt-1 text-xs">Mean: {{ profile.avg_revenue|floatformat:2 }} &bull; {{ profile.unique_products|default:0 }} unique groups</p>
+        <p class="il-tech il-muted mt-1.5 text-xs">Mean: {{ profile.avg_revenue|floatformat:2 }} &bull; {{ profile.unique_products|default:0 }} unique groups</p>
     </div>
 
-    <div class="il-card p-5">
+    <div class="p-5">
         <p class="il-kpi-label">Data Quality Issues</p>
         <p class="il-kpi-value mt-2">{{ profile.total_missing|default:0 }} missing</p>
-        <p class="il-muted mt-1 text-xs">
+        <p class="il-tech il-muted mt-1.5 text-xs">
             {{ profile.duplicate_rows|default:0 }} duplicates &bull; {{ profile.total_outliers|default:0 }} 3&times;IQR outliers
         </p>
     </div>
 </section>
 
 <!-- Missing Values & Numerical Columns Summary -->
-<section class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
-    <div class="il-card p-6">
-        <h3 class="il-title text-base">Column Missingness &amp; Quality Checks</h3>
-        <div class="mt-4 space-y-2 text-sm">
+<section class="grid grid-cols-1 gap-6 lg:grid-cols-12 mb-6">
+    <div class="lg:col-span-5 il-panel p-6">
+        <p class="il-kicker">Quality Audit</p>
+        <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Column Missingness &amp; Quality Checks</h3>
+        <div class="mt-4 divide-y text-sm border-t border-b" style="border-color: var(--border-default);">
             {% for col_name, miss_count in profile.missing_by_column.items %}
-            <div class="il-card-subtle flex items-center justify-between px-3.5 py-2">
-                <span class="font-medium text-xs" style="color: var(--text-primary);">{{ col_name }}</span>
+            <div class="flex items-center justify-between py-2">
+                <span class="il-tech font-medium text-xs" style="color: var(--text-primary);">{{ col_name }}</span>
                 <span class="il-badge {% if miss_count > 0 %}il-badge-amber{% else %}il-badge-teal{% endif %}">
                     {{ miss_count }} missing
                 </span>
             </div>
             {% endfor %}
         </div>
-        <div class="mt-4 grid grid-cols-2 gap-3 text-xs border-t pt-4" style="border-color: var(--border-default); color: var(--text-secondary);">
-            <div>Duplicate records: <strong style="color: var(--text-primary);">{{ profile.duplicate_rows|default:0 }}</strong></div>
-            <div>Invalid dates: <strong style="color: var(--text-primary);">{{ profile.invalid_dates_count|default:0 }}</strong></div>
-            <div>Negative numbers: <strong style="color: var(--text-primary);">{{ profile.total_negative_values|default:0 }}</strong></div>
-            <div>Extreme outliers (3&times;IQR): <strong style="color: var(--text-primary);">{{ profile.total_outliers|default:0 }}</strong></div>
+        <div class="mt-4 grid grid-cols-2 gap-3 text-xs" style="color: var(--text-secondary);">
+            <div>Duplicate records: <strong class="il-tech" style="color: var(--text-primary);">{{ profile.duplicate_rows|default:0 }}</strong></div>
+            <div>Invalid dates: <strong class="il-tech" style="color: var(--text-primary);">{{ profile.invalid_dates_count|default:0 }}</strong></div>
+            <div>Negative numbers: <strong class="il-tech" style="color: var(--text-primary);">{{ profile.total_negative_values|default:0 }}</strong></div>
+            <div>Extreme outliers (3&times;IQR): <strong class="il-tech" style="color: var(--text-primary);">{{ profile.total_outliers|default:0 }}</strong></div>
         </div>
     </div>
 
-    <div class="il-card p-6">
-        <h3 class="il-title text-base">Numerical Columns Statistics</h3>
+    <div class="lg:col-span-7 il-panel p-6">
+        <p class="il-kicker">Quantitative Summary</p>
+        <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Numerical Columns Statistics</h3>
         {% if profile.numeric_columns_stats %}
         <div class="il-table-wrap mt-4">
             <table class="il-table">
@@ -129,11 +134,11 @@
                 <tbody>
                     {% for col_name, st in profile.numeric_columns_stats.items %}
                     <tr>
-                        <td class="font-medium" style="color: var(--text-primary);">{{ col_name }}</td>
-                        <td>{{ st.mean|default:"—" }}</td>
-                        <td>{{ st.median|default:"—" }}</td>
-                        <td>{{ st.std|default:"—" }}</td>
-                        <td class="whitespace-nowrap">{{ st.min|default:"—" }} / {{ st.max|default:"—" }}</td>
+                        <td class="il-tech font-medium" style="color: var(--text-primary);">{{ col_name }}</td>
+                        <td class="il-tech">{{ st.mean|default:"—" }}</td>
+                        <td class="il-tech">{{ st.median|default:"—" }}</td>
+                        <td class="il-tech">{{ st.std|default:"—" }}</td>
+                        <td class="il-tech whitespace-nowrap">{{ st.min|default:"—" }} / {{ st.max|default:"—" }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -144,7 +149,7 @@
         {% endif %}
 
         {% if dataset.cleaning_log %}
-        <div class="mt-4 border-t pt-4" style="border-color: var(--border-default);">
+        <div class="mt-5 border-t pt-4" style="border-color: var(--border-default);">
             <h4 class="il-kpi-label">Recorded Cleaning Operations</h4>
             <ul class="mt-2 list-disc pl-5 text-xs space-y-1" style="color: var(--text-secondary);">
                 {% for op in dataset.cleaning_log %}
@@ -158,20 +163,21 @@
 
 <!-- Categorical Columns Breakdown -->
 {% if profile.categorical_columns_stats %}
-<div class="il-card p-6 mb-6">
-    <h3 class="il-title text-base mb-3">Categorical Feature Breakdown</h3>
+<div class="il-panel p-6 mb-6">
+    <p class="il-kicker">Categorical Taxonomy</p>
+    <h3 class="il-editorial mt-0.5 text-base font-semibold mb-4" style="color: var(--text-primary);">Categorical Feature Breakdown</h3>
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {% for col_name, cat in profile.categorical_columns_stats.items %}
         <div class="il-card-subtle p-4">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-semibold" style="color: var(--text-primary);">{{ col_name }}</span>
-                <span class="il-muted text-xs">{{ cat.unique_count }} unique</span>
+            <div class="flex items-center justify-between pb-2 mb-2 border-b" style="border-color: var(--border-default);">
+                <span class="il-tech text-xs font-semibold" style="color: var(--text-primary);">{{ col_name }}</span>
+                <span class="il-tech il-muted text-[11px]">{{ cat.unique_count }} unique</span>
             </div>
             <ul class="space-y-1 text-xs" style="color: var(--text-secondary);">
                 {% for val, cnt in cat.top_values %}
                 <li class="flex justify-between">
                     <span class="truncate pr-2">{{ val }}</span>
-                    <span class="font-semibold" style="color: var(--text-primary);">{{ cnt }}</span>
+                    <span class="il-tech font-semibold" style="color: var(--text-primary);">{{ cnt }}</span>
                 </li>
                 {% endfor %}
             </ul>
@@ -182,8 +188,13 @@
 {% endif %}
 
 <!-- Sample Rows Preview -->
-<div class="il-card p-6">
-    <h3 class="il-title text-base mb-3">Sample Records (First 10 Rows)</h3>
+<div class="il-panel p-6">
+    <div class="flex items-center justify-between mb-3">
+        <div>
+            <p class="il-kicker">Data Specimen</p>
+            <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Sample Records (First 10 Rows)</h3>
+        </div>
+    </div>
     <div class="il-table-wrap">
         <table class="il-table">
             <thead>

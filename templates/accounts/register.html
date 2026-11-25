@@ -6,16 +6,22 @@
 <div class="sm:mx-auto sm:w-full sm:max-w-md">
     <div class="text-center">
         <span class="il-badge il-badge-teal mb-3">Private Analytics Workspace</span>
-        <h2 class="text-2xl font-semibold tracking-tight" style="color: var(--text-primary);">
+        <h2 class="il-editorial text-3xl font-semibold tracking-tight" style="color: var(--text-primary);">
             Create your InsightLab account
         </h2>
-        <p class="mt-1.5 text-sm" style="color: var(--text-secondary);">
+        <p class="mt-2 text-sm" style="color: var(--text-secondary);">
             Explore. Analyse. Predict. Your datasets, experiments, and reports remain private to you.
         </p>
     </div>
 
-    <div class="il-card mt-7 px-6 py-8 sm:px-8">
-        <form method="post" class="space-y-4" novalidate>
+    <div class="il-panel relative overflow-hidden mt-7 px-6 py-8 sm:px-8">
+        <svg class="pointer-events-none absolute right-0 top-0 h-24 w-40 opacity-30" viewBox="0 0 180 100" fill="none" aria-hidden="true">
+            <path d="M50 105C85 78 125 65 182 15" stroke="var(--accent-primary-border)" stroke-width="1"/>
+            <path d="M85 105C115 84 148 74 185 38" stroke="var(--accent-secondary-border)" stroke-width="1"/>
+            <path d="M118 105C140 88 164 82 186 60" stroke="var(--accent-amber-border)" stroke-width="1"/>
+        </svg>
+
+        <form method="post" class="relative z-10 space-y-4" novalidate>
             {% csrf_token %}
 
             {% if form.non_field_errors %}
@@ -28,7 +34,7 @@
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                    <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                    <label for="{{ form.first_name.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                         First name
                     </label>
                     {{ form.first_name }}
@@ -38,7 +44,7 @@
                 </div>
 
                 <div>
-                    <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                    <label for="{{ form.last_name.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                         Last name
                     </label>
                     {{ form.last_name }}
@@ -49,7 +55,7 @@
             </div>
 
             <div>
-                <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ form.username.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     Username
                 </label>
                 {{ form.username }}
@@ -59,7 +65,7 @@
             </div>
 
             <div>
-                <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ form.email.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     Email address
                 </label>
                 {{ form.email }}
@@ -69,7 +75,7 @@
             </div>
 
             <div>
-                <label for="{{ form.password1.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ form.password1.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     Password
                 </label>
                 {{ form.password1 }}
@@ -82,7 +88,7 @@
             </div>
 
             <div>
-                <label for="{{ form.password2.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ form.password2.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     Confirm password
                 </label>
                 {{ form.password2 }}
@@ -96,7 +102,7 @@
             </button>
         </form>
 
-        <p class="mt-6 text-center text-sm" style="color: var(--text-secondary);">
+        <p class="relative z-10 mt-6 pt-5 border-t text-center text-sm" style="border-color: var(--border-default); color: var(--text-secondary);">
             Already have an account?
             <a href="{% url 'accounts:login' %}" class="il-link">
                 Sign in

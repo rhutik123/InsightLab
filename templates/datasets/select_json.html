@@ -6,10 +6,11 @@
 
 {% block content %}
 <div class="space-y-6">
-    <div class="il-card p-6">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div class="il-panel p-6">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pb-4 border-b" style="border-color: var(--border-default);">
             <div>
-                <h2 class="il-title text-base">Choose JSON Array / Path to Import</h2>
+                <p class="il-kicker">Structured JSON Inspection</p>
+                <h2 class="il-editorial mt-0.5 text-lg font-semibold" style="color: var(--text-primary);">Choose JSON Array / Path to Import</h2>
                 <p class="il-subtitle mt-1 text-sm">
                     File <strong>{{ dataset.original_filename|default:dataset.name }}</strong> contains multiple candidate JSON record collections. Select the collection you want to flatten and normalize for analysis.
                 </p>
@@ -38,7 +39,7 @@
                                {% if not cand.is_usable %}disabled{% elif cand.path == form.json_path.value or cand.path == form.initial.json_path %}checked{% endif %}>
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
-                                <span class="font-mono text-sm font-semibold" style="color: var(--text-primary);">{{ cand.label }}</span>
+                                <span class="il-tech text-sm font-semibold" style="color: var(--text-primary);">{{ cand.label }}</span>
                                 <span class="il-badge il-badge-muted">
                                     {{ cand.row_count }} records &times; {{ cand.column_count }} cols
                                 </span>
@@ -50,7 +51,7 @@
                             </div>
 
                             {% if cand.headers %}
-                                <p class="il-subtitle mt-1.5 text-xs">
+                                <p class="il-tech il-subtitle mt-1.5 text-xs">
                                     <strong>Detected Columns:</strong> {{ cand.headers|join:", " }}
                                 </p>
                             {% endif %}
@@ -91,7 +92,7 @@
                 {% endfor %}
             </div>
 
-            <div class="flex flex-wrap items-center gap-3 pt-2">
+            <div class="flex flex-wrap items-center gap-3 pt-3 border-t" style="border-color: var(--border-default);">
                 <button type="submit" class="il-btn il-btn-primary">
                     Import Selected JSON Path
                 </button>

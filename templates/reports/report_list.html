@@ -5,18 +5,21 @@
 {% block page_heading %}Analytical &amp; Predictive PDF Reports{% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
-    <div class="xl:col-span-4 il-card p-6">
-        <h2 class="il-title text-base">Generate InsightLab PDF Report</h2>
-        <p class="il-subtitle mt-1 text-xs">
-            Compiles dataset overview, numerical column statistics, cleaning logs, EDA charts, anomaly observations, model comparisons, and decision-support insights from your real workspace data.
-        </p>
+<div class="grid grid-cols-1 gap-6 xl:grid-cols-12 items-start">
+    <div class="xl:col-span-4 il-panel p-6">
+        <div class="pb-4 border-b" style="border-color: var(--border-default);">
+            <p class="il-kicker">Document Compiler</p>
+            <h2 class="il-editorial mt-0.5 text-lg font-semibold" style="color: var(--text-primary);">Generate InsightLab PDF Report</h2>
+            <p class="il-subtitle mt-1.5 text-xs leading-relaxed">
+                Compiles dataset overview, numerical column statistics, cleaning logs, EDA charts, anomaly observations, model comparisons, and decision-support insights from your real workspace data.
+            </p>
+        </div>
 
         {% if datasets %}
         <form method="post" class="mt-5 space-y-4">
             {% csrf_token %}
             <div>
-                <label for="id_report_dataset" class="block text-xs font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="id_report_dataset" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     Select Mapped Dataset
                 </label>
                 <select id="id_report_dataset" name="dataset_id" class="block w-full">
@@ -36,8 +39,16 @@
         {% endif %}
     </div>
 
-    <div class="xl:col-span-8 il-card p-6">
-        <h3 class="il-title text-base mb-3">Saved Reports</h3>
+    <div class="xl:col-span-8 il-panel p-6">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+            <div>
+                <p class="il-kicker">Publication Archive</p>
+                <h3 class="il-editorial mt-0.5 text-lg font-semibold" style="color: var(--text-primary);">Saved Reports</h3>
+            </div>
+            {% if reports %}
+                <span class="il-tech il-muted text-xs">{{ reports|length }} document(s)</span>
+            {% endif %}
+        </div>
         {% if reports %}
         <div class="il-table-wrap">
             <table class="il-table">
@@ -52,9 +63,9 @@
                 <tbody>
                     {% for r in reports %}
                     <tr>
-                        <td class="font-medium" style="color: var(--text-primary);">{{ r.title }}</td>
+                        <td class="il-editorial font-medium text-sm" style="color: var(--text-primary);">{{ r.title }}</td>
                         <td>{{ r.dataset.name }}</td>
-                        <td class="whitespace-nowrap il-muted">{{ r.created_at|date:"M d, Y H:i" }}</td>
+                        <td class="il-tech whitespace-nowrap il-muted">{{ r.created_at|date:"M d, Y H:i" }}</td>
                         <td class="text-right whitespace-nowrap">
                             <div class="inline-flex items-center gap-2 shrink-0">
                                 <a href="{% url 'reports:download' r.pk %}" class="il-btn il-btn-soft-indigo il-btn-sm">
@@ -75,8 +86,8 @@
             </table>
         </div>
         {% else %}
-        <div class="il-empty-inner">
-            <p class="text-sm font-medium" style="color: var(--text-primary);">No PDF reports generated yet</p>
+        <div class="il-empty-inner py-10">
+            <p class="il-editorial text-base font-semibold" style="color: var(--text-primary);">No PDF reports generated yet</p>
             <p class="il-muted mt-1 text-xs">Select a dataset on the left and click Generate PDF Report.</p>
         </div>
         {% endif %}

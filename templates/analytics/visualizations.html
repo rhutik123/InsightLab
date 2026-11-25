@@ -6,18 +6,25 @@
 
 {% block content %}
 {% if not datasets %}
-<div class="il-empty">
-    <h3 class="il-title text-base">No mapped datasets available</h3>
-    <p class="il-subtitle mt-1 text-sm">Upload and configure a CSV, Excel, or JSON dataset to build custom charts.</p>
+<div class="il-empty py-12">
+    <p class="il-kicker">Studio Empty</p>
+    <h3 class="il-editorial mt-1 text-xl font-semibold" style="color: var(--text-primary);">No mapped datasets available</h3>
+    <p class="il-subtitle mt-1.5 text-sm">Upload and configure a CSV, Excel, or JSON dataset to build custom charts.</p>
     <a href="{% url 'datasets:upload' %}" class="il-btn il-btn-primary mt-5">
         Upload Dataset
     </a>
 </div>
 {% else %}
-<form method="get" class="il-card mb-6 p-5">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6 items-end">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
+    <!-- Studio Parameter Controls -->
+    <form method="get" class="lg:col-span-4 il-panel p-6 space-y-4">
+        <div class="pb-3 border-b" style="border-color: var(--border-default);">
+            <p class="il-kicker">Chart Builder</p>
+            <h2 class="il-editorial mt-0.5 text-lg font-semibold" style="color: var(--text-primary);">Plot Specification</h2>
+        </div>
+
         <div>
-            <label for="id_dataset" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Dataset</label>
+            <label for="id_dataset" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">Dataset</label>
             <select id="id_dataset" name="dataset" class="block w-full">
                 {% for ds in datasets %}
                     <option value="{{ ds.pk }}" {% if selected_dataset.pk == ds.pk %}selected{% endif %}>{{ ds.name }}</option>
@@ -26,7 +33,7 @@
         </div>
 
         <div>
-            <label for="id_chart_type" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Chart Type</label>
+            <label for="id_chart_type" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">Chart Type</label>
             <select id="id_chart_type" name="chart_type" class="block w-full">
                 <option value="line" {% if chart_type == 'line' %}selected{% endif %}>Line Trend</option>
                 <option value="bar" {% if chart_type == 'bar' %}selected{% endif %}>Bar Comparison</option>
@@ -36,7 +43,7 @@
         </div>
 
         <div>
-            <label for="id_x_col" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">X-Axis / Group</label>
+            <label for="id_x_col" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">X-Axis / Group</label>
             <select id="id_x_col" name="x_col" class="block w-full">
                 {% for col in all_cols %}
                     <option value="{{ col }}" {% if x_col == col %}selected{% endif %}>{{ col }}</option>
@@ -45,7 +52,7 @@
         </div>
 
         <div>
-            <label for="id_y_col" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Y-Axis (Numerical)</label>
+            <label for="id_y_col" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">Y-Axis (Numerical)</label>
             <select id="id_y_col" name="y_col" class="block w-full">
                 {% for col in numeric_cols %}
                     <option value="{{ col }}" {% if y_col == col %}selected{% endif %}>{{ col }}</option>
@@ -54,7 +61,7 @@
         </div>
 
         <div>
-            <label for="id_agg" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Aggregation</label>
+            <label for="id_agg" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">Aggregation</label>
             <select id="id_agg" name="agg" class="block w-full">
                 <option value="sum" {% if agg_func == 'sum' %}selected{% endif %}>Sum</option>
                 <option value="mean" {% if agg_func == 'mean' %}selected{% endif %}>Average (Mean)</option>
@@ -62,26 +69,30 @@
             </select>
         </div>
 
-        <div>
-            <button type="submit" class="il-btn il-btn-primary w-full">
+        <div class="pt-2">
+            <button type="submit" class="il-btn il-btn-primary w-full py-2.5">
                 Render Chart
             </button>
         </div>
-    </div>
-</form>
+    </form>
 
-<div class="il-card p-6">
-    {% if viz_data and viz_data.has_chart %}
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h3 class="il-title text-base">{{ viz_data.title }}</h3>
-            <span class="il-badge il-badge-teal uppercase text-[10px]">{{ viz_data.chart_type }}</span>
-        </div>
-        <div class="h-80"><canvas id="customVizChart"></canvas></div>
-    {% else %}
-        <div class="il-empty-inner flex h-64 items-center justify-center text-sm" style="color: var(--text-secondary);">
-            {{ viz_data.message|default:"Select columns above and click Render Chart." }}
-        </div>
-    {% endif %}
+    <!-- Main Visualization Stage -->
+    <div class="lg:col-span-8 il-panel p-6">
+        {% if viz_data and viz_data.has_chart %}
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-4 mb-5 border-b" style="border-color: var(--border-default);">
+                <div>
+                    <p class="il-kicker">Rendered Output</p>
+                    <h3 class="il-editorial mt-0.5 text-lg font-semibold" style="color: var(--text-primary);">{{ viz_data.title }}</h3>
+                </div>
+                <span class="il-badge il-badge-teal uppercase text-[10px]">{{ viz_data.chart_type }}</span>
+            </div>
+            <div class="h-96"><canvas id="customVizChart"></canvas></div>
+        {% else %}
+            <div class="il-empty-inner flex h-80 items-center justify-center text-sm" style="color: var(--text-secondary);">
+                {{ viz_data.message|default:"Select columns on the left and click Render Chart." }}
+            </div>
+        {% endif %}
+    </div>
 </div>
 {% endif %}
 {% endblock %}
@@ -101,7 +112,8 @@ if (viz && viz.has_chart && window.InsightLabCharts) {
                     label: viz.title,
                     data: viz.points,
                     ilRole: 'primary-bar',
-                    backgroundColor: pal.indigo
+                    backgroundColor: pal.indigo,
+                    pointRadius: 4
                 }]
             },
             options: {
@@ -125,9 +137,10 @@ if (viz && viz.has_chart && window.InsightLabCharts) {
                     ilRole: isLine ? 'primary-line' : 'primary-bar',
                     borderColor: pal.indigo,
                     backgroundColor: isLine ? pal.indigoSoft : pal.indigo,
+                    borderWidth: isLine ? 2 : 0,
                     fill: isLine,
-                    tension: 0.25,
-                    borderRadius: isLine ? 0 : 6
+                    tension: 0.22,
+                    borderRadius: isLine ? 0 : 3
                 }]
             },
             options: {

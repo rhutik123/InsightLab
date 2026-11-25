@@ -5,12 +5,13 @@
 {% block page_heading %}Model Performance Comparison{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+<div class="mb-6 pb-5 border-b flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between" style="border-color: var(--border-default);">
     <div>
-        <h2 class="il-title text-base">Comparative Evaluation Across Saved Runs</h2>
-        <p class="il-subtitle text-sm mt-0.5">Compare MAE, RMSE, MAPE, and R&sup2; evaluated on held-out chronological test splits.</p>
+        <p class="il-kicker">Benchmark Matrix</p>
+        <h2 class="il-editorial mt-0.5 text-xl font-semibold" style="color: var(--text-primary);">Comparative Evaluation Across Saved Runs</h2>
+        <p class="il-subtitle text-sm mt-1">Compare MAE, RMSE, MAPE, and R&sup2; evaluated on held-out chronological test splits.</p>
     </div>
-    <form method="get" class="flex items-center gap-2">
+    <form method="get" class="flex items-center gap-2 shrink-0">
         <select name="dataset" class="min-w-[12rem]">
             <option value="">All Datasets</option>
             {% for ds in datasets %}
@@ -26,10 +27,10 @@
 {% if runs %}
 {% if best_overall %}
 <div class="il-alert il-alert-success mb-6 p-5">
-    <p class="text-xs font-semibold uppercase tracking-wide">Lowest Held-Out Test RMSE Observed</p>
-    <p class="mt-1 text-base font-semibold" style="color: var(--text-primary);">
+    <p class="il-kicker" style="color: var(--status-success-text);">Lowest Held-Out Test RMSE Observed</p>
+    <p class="il-editorial mt-1 text-lg font-semibold" style="color: var(--text-primary);">
         {{ best_overall.get_model_name_display }} on {{ best_overall.dataset.name }} ({{ best_overall.target_metric }})
-        &mdash; RMSE: {{ best_overall.rmse|floatformat:2 }}, MAE: {{ best_overall.mae|floatformat:2 }}
+        &mdash; <span class="il-tech">RMSE: {{ best_overall.rmse|floatformat:2 }}, MAE: {{ best_overall.mae|floatformat:2 }}</span>
     </p>
     <p class="il-subtitle mt-1 text-xs">
         Note: Error comparisons are only directly comparable across models run on the same dataset, target metric, and test period.
@@ -38,14 +39,20 @@
 {% endif %}
 
 {% if chart_data %}
-<div class="il-card p-6 mb-6">
-    <h3 class="il-title text-base mb-3">RMSE &amp; MAE Comparison (Latest 12 Evaluated Runs)</h3>
+<div class="il-panel p-6 mb-6">
+    <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+        <p class="il-kicker">Error Distribution</p>
+        <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">RMSE &amp; MAE Comparison (Latest 12 Evaluated Runs)</h3>
+    </div>
     <div class="h-72"><canvas id="compareAllChart"></canvas></div>
 </div>
 {% endif %}
 
-<div class="il-card p-6">
-    <h3 class="il-title text-base mb-3">Evaluation Ledger</h3>
+<div class="il-panel p-6">
+    <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+        <p class="il-kicker">Full Ledger</p>
+        <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Evaluation Ledger</h3>
+    </div>
     <div class="il-table-wrap">
         <table class="il-table">
             <thead>
@@ -67,13 +74,13 @@
                     <td class="font-medium" style="color: var(--text-primary);">{{ r.dataset.name }}</td>
                     <td>{{ r.get_model_name_display }}</td>
                     <td>{{ r.target_metric }} ({{ r.product_display }})</td>
-                    <td class="il-muted">{{ r.train_rows }} / {{ r.test_rows }}</td>
-                    <td>{{ r.mae|floatformat:2|default:"—" }}</td>
-                    <td class="font-semibold" style="color: var(--accent-primary-text);">{{ r.rmse|floatformat:2|default:"—" }}</td>
-                    <td>{{ r.mape|floatformat:2|default:"—" }}</td>
-                    <td>{{ r.r2|floatformat:3|default:"—" }}</td>
+                    <td class="il-tech il-muted">{{ r.train_rows }} / {{ r.test_rows }}</td>
+                    <td class="il-tech">{{ r.mae|floatformat:2|default:"—" }}</td>
+                    <td class="il-tech font-semibold" style="color: var(--accent-primary-text);">{{ r.rmse|floatformat:2|default:"—" }}</td>
+                    <td class="il-tech">{{ r.mape|floatformat:2|default:"—" }}</td>
+                    <td class="il-tech">{{ r.r2|floatformat:3|default:"—" }}</td>
                     <td class="text-right">
-                        <a href="{% url 'forecasting:detail' r.pk %}" class="il-link">View</a>
+                        <a href="{% url 'forecasting:detail' r.pk %}" class="il-link il-tech text-xs">View &rarr;</a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -82,9 +89,10 @@
     </div>
 </div>
 {% else %}
-<div class="il-empty">
-    <h3 class="il-title text-base">No model evaluations recorded yet</h3>
-    <p class="il-subtitle mt-1 text-sm">Run forecasting models in Forecasting or Experiment Lab to compare performance metrics here.</p>
+<div class="il-empty py-12">
+    <p class="il-kicker">Empty Ledger</p>
+    <h3 class="il-editorial mt-1 text-xl font-semibold" style="color: var(--text-primary);">No model evaluations recorded yet</h3>
+    <p class="il-subtitle mt-1.5 text-sm">Run forecasting models in Forecasting or Experiment Lab to compare performance metrics here.</p>
     <a href="{% url 'forecasting:home' %}" class="il-btn il-btn-primary mt-5">
         Go to Forecasting
     </a>
@@ -103,8 +111,8 @@ if (cData && window.InsightLabCharts) {
         data: {
             labels: cData.labels,
             datasets: [
-                { label: 'Test RMSE', data: cData.rmse, ilRole: 'primary-bar', backgroundColor: pal.indigo, borderRadius: 5 },
-                { label: 'Test MAE', data: cData.mae, ilRole: 'muted-bar', backgroundColor: pal.mutedBar, borderRadius: 5 }
+                { label: 'Test RMSE', data: cData.rmse, ilRole: 'primary-bar', backgroundColor: pal.indigo, borderRadius: 3 },
+                { label: 'Test MAE', data: cData.mae, ilRole: 'muted-bar', backgroundColor: pal.mutedBar, borderRadius: 3 }
             ]
         },
         options: { responsive: true, maintainAspectRatio: false }

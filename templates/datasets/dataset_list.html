@@ -2,7 +2,7 @@
 
 {% block title %}My Datasets — InsightLab{% endblock %}
 {% block breadcrumb %}Workspace / My Datasets{% endblock %}
-{% block page_heading %}My Datasets{% endblock %}
+{% block page_heading %}Dataset Library{% endblock %}
 
 {% block topbar_actions %}
 <a href="{% url 'datasets:upload' %}" class="il-btn il-btn-primary il-btn-sm">
@@ -11,14 +11,15 @@
 {% endblock %}
 
 {% block content %}
-<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+<div class="mb-6 pb-5 border-b flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between" style="border-color: var(--border-default);">
     <div>
-        <h2 class="il-title text-base">Uploaded Datasets</h2>
-        <p class="il-subtitle text-sm mt-0.5">
-            Upload CSV (.csv), Excel (.xlsx, .xls), or JSON (.json) datasets (sales, web traffic, expenses, inventory, or custom metrics) for profiling and analysis.
+        <p class="il-kicker">Structured Repository</p>
+        <h2 class="il-editorial mt-1 text-xl font-semibold" style="color: var(--text-primary);">Uploaded Datasets</h2>
+        <p class="il-subtitle text-sm mt-1 max-w-2xl">
+            Upload CSV (<span class="il-tech">.csv</span>), Excel (<span class="il-tech">.xlsx, .xls</span>), or JSON (<span class="il-tech">.json</span>) datasets (sales, web traffic, expenses, inventory, or custom metrics) for profiling and analysis.
         </p>
     </div>
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap items-center gap-2 shrink-0">
         <a href="{% url 'datasets:sample_csv' %}?type=sales" class="il-btn il-btn-secondary il-btn-sm">
             Sample Sales CSV
         </a>
@@ -35,7 +36,7 @@
 </div>
 
 {% if datasets %}
-<div class="il-card overflow-hidden">
+<div class="il-panel overflow-hidden">
     <div class="overflow-x-auto">
         <table class="il-table">
             <thead>
@@ -53,10 +54,10 @@
                 {% with prof=ds.active_profile %}
                 <tr>
                     <td>
-                        <a href="{% url 'datasets:detail' ds.pk %}" class="font-semibold hover:underline block" style="color: var(--text-primary);">
+                        <a href="{% url 'datasets:detail' ds.pk %}" class="il-editorial text-sm font-semibold hover:underline block" style="color: var(--text-primary);">
                             {{ ds.name }}
                         </a>
-                        <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]" style="color: var(--text-muted);">
+                        <div class="il-tech mt-1 flex flex-wrap items-center gap-1.5 text-[11px]" style="color: var(--text-muted);">
                             <span class="il-badge il-badge-muted uppercase py-0">{{ ds.source_format }}</span>
                             {% if ds.original_filename %}<span class="truncate max-w-[14rem]">{{ ds.original_filename }}</span>{% endif %}
                             {% if ds.selected_sheet %}<span>&bull; Sheet: {{ ds.selected_sheet }}</span>{% endif %}
@@ -73,17 +74,17 @@
                     </td>
                     <td class="hidden sm:table-cell text-xs">
                         {% if ds.is_mapped %}
-                            <span style="color: var(--text-primary); font-weight: 500;">{{ prof.row_count|default:0 }} rows &times; {{ prof.col_count|default:0 }} cols</span>
+                            <span class="il-tech font-medium" style="color: var(--text-primary);">{{ prof.row_count|default:0 }} rows &times; {{ prof.col_count|default:0 }} cols</span>
                             {% if prof.primary_target_column %}
-                                <span class="il-muted block">Target: {{ prof.primary_target_column }}</span>
+                                <span class="il-tech il-muted block mt-0.5 text-[11px]">Target: {{ prof.primary_target_column }}</span>
                             {% endif %}
                         {% else %}
-                            <span style="color: var(--status-warning-text);">Pending schema setup</span>
+                            <span class="il-tech" style="color: var(--status-warning-text);">Pending schema setup</span>
                         {% endif %}
                     </td>
-                    <td class="hidden lg:table-cell text-xs">
+                    <td class="hidden lg:table-cell il-tech text-xs">
                         {% if ds.is_mapped and prof.date_min %}
-                            {{ prof.date_min }} to {{ prof.date_max }}
+                            {{ prof.date_min }} &rarr; {{ prof.date_max }}
                         {% elif ds.is_mapped %}
                             <span class="il-muted">Non-time-series</span>
                         {% else %}
@@ -145,9 +146,10 @@
     </div>
 </div>
 {% else %}
-<div class="il-empty">
-    <h3 class="il-title text-base">No datasets uploaded yet</h3>
-    <p class="il-subtitle mt-1.5 text-sm max-w-lg mx-auto">
+<div class="il-empty py-12">
+    <p class="il-kicker">Empty Repository</p>
+    <h3 class="il-editorial mt-1.5 text-xl font-semibold" style="color: var(--text-primary);">No datasets uploaded yet</h3>
+    <p class="il-subtitle mt-2 text-sm max-w-lg mx-auto">
         Upload any structured CSV (.csv), Excel (.xlsx, .xls), or JSON (.json) dataset (at least 2 columns and 1 data row), or download one of our synthetic demonstration CSVs below to explore InsightLab.
     </p>
     <div class="mt-6 flex flex-wrap justify-center gap-2.5">

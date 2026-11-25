@@ -2,71 +2,75 @@
 
 {% block title %}Data Cleaning — InsightLab{% endblock %}
 {% block breadcrumb %}Workspace / Data Cleaning{% endblock %}
-{% block page_heading %}Data Cleaning{% endblock %}
+{% block page_heading %}Data Preparation Workstation{% endblock %}
 
 {% block content %}
 {% if not has_datasets %}
-<div class="il-empty">
-    <h3 class="il-title text-base">No mapped datasets available</h3>
-    <p class="il-subtitle mt-1 text-sm">Upload and configure a CSV, Excel, or JSON dataset before running data cleaning.</p>
+<div class="il-empty py-12">
+    <p class="il-kicker">Preparation Unavailable</p>
+    <h3 class="il-editorial mt-1 text-xl font-semibold" style="color: var(--text-primary);">No mapped datasets available</h3>
+    <p class="il-subtitle mt-1.5 text-sm">Upload and configure a CSV, Excel, or JSON dataset before running data cleaning.</p>
     <a href="{% url 'datasets:upload' %}" class="il-btn il-btn-primary mt-5">
         Upload Dataset
     </a>
 </div>
 {% else %}
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
     <!-- Cleaning Options Form -->
-    <div class="lg:col-span-2 il-card p-6">
-        <h2 class="il-title text-base">Cleaning Pipeline Options</h2>
-        <p class="il-subtitle mt-1 text-xs">
-            Preview changes before applying. Your original uploaded file is always preserved untouched, and cleaning saves a separate cleaned file across all columns.
-        </p>
+    <div class="lg:col-span-5 il-panel p-6">
+        <div class="pb-4 border-b" style="border-color: var(--border-default);">
+            <p class="il-kicker">Preparation Protocol</p>
+            <h2 class="il-editorial mt-0.5 text-lg font-semibold" style="color: var(--text-primary);">Cleaning Pipeline Options</h2>
+            <p class="il-subtitle mt-1 text-xs leading-relaxed">
+                Preview changes before applying. Your original uploaded file is always preserved untouched, and cleaning saves a separate cleaned file across all columns.
+            </p>
+        </div>
 
         <form method="post" class="mt-5 space-y-4">
             {% csrf_token %}
 
             <div>
-                <label for="{{ form.dataset.id_for_label }}" class="block text-xs font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ form.dataset.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     {{ form.dataset.label }}
                 </label>
                 {{ form.dataset }}
             </div>
 
-            <div class="il-card-subtle p-3.5 space-y-2.5">
+            <div class="il-card-subtle p-4 space-y-2.5">
                 <p class="il-kpi-label">Row &amp; Structure Rules</p>
-                <label class="flex items-center gap-2.5 text-sm cursor-pointer" style="color: var(--text-primary);">
-                    {{ form.remove_duplicates }}
+                <label class="flex items-start gap-2.5 text-sm cursor-pointer" style="color: var(--text-primary);">
+                    <span class="mt-0.5">{{ form.remove_duplicates }}</span>
                     <span>{{ form.remove_duplicates.label }}</span>
                 </label>
-                <label class="flex items-center gap-2.5 text-sm cursor-pointer" style="color: var(--text-primary);">
-                    {{ form.remove_invalid_dates }}
+                <label class="flex items-start gap-2.5 text-sm cursor-pointer" style="color: var(--text-primary);">
+                    <span class="mt-0.5">{{ form.remove_invalid_dates }}</span>
                     <span>{{ form.remove_invalid_dates.label }}</span>
                 </label>
-                <label class="flex items-center gap-2.5 text-sm cursor-pointer" style="color: var(--text-primary);">
-                    {{ form.remove_negative_values }}
+                <label class="flex items-start gap-2.5 text-sm cursor-pointer" style="color: var(--text-primary);">
+                    <span class="mt-0.5">{{ form.remove_negative_values }}</span>
                     <span>{{ form.remove_negative_values.label }}</span>
                 </label>
-                <label class="flex items-center gap-2.5 text-sm cursor-pointer" style="color: var(--text-primary);">
-                    {{ form.aggregate_daily }}
+                <label class="flex items-start gap-2.5 text-sm cursor-pointer" style="color: var(--text-primary);">
+                    <span class="mt-0.5">{{ form.aggregate_daily }}</span>
                     <span>{{ form.aggregate_daily.label }}</span>
                 </label>
             </div>
 
             <div>
-                <label for="{{ form.missing_strategy.id_for_label }}" class="block text-xs font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ form.missing_strategy.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     {{ form.missing_strategy.label }}
                 </label>
                 {{ form.missing_strategy }}
             </div>
 
             <div>
-                <label for="{{ form.categorical_missing_strategy.id_for_label }}" class="block text-xs font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ form.categorical_missing_strategy.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     {{ form.categorical_missing_strategy.label }}
                 </label>
                 {{ form.categorical_missing_strategy }}
             </div>
 
-            <div class="flex flex-wrap gap-2.5 pt-2">
+            <div class="flex flex-wrap gap-2.5 pt-3 border-t" style="border-color: var(--border-default);">
                 <button type="submit" name="action" value="preview" class="il-btn il-btn-secondary">
                     Preview Cleaning
                 </button>
@@ -78,29 +82,32 @@
     </div>
 
     <!-- Cleaning Preview Output -->
-    <div class="lg:col-span-3 il-card p-6">
-        <h3 class="il-title text-base">Cleaning Inspection Preview</h3>
+    <div class="lg:col-span-7 il-panel p-6">
+        <div class="pb-4 border-b" style="border-color: var(--border-default);">
+            <p class="il-kicker">Dry-Run Inspection</p>
+            <h3 class="il-editorial mt-0.5 text-lg font-semibold" style="color: var(--text-primary);">Cleaning Inspection Preview</h3>
+        </div>
         {% if preview_summary %}
-            <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div class="il-card-subtle p-3">
+            <div class="il-strip mt-5 grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x" style="border-color: var(--border-default);">
+                <div class="p-3.5">
                     <p class="il-kpi-label">Rows Before</p>
-                    <p class="mt-1 text-lg font-semibold" style="color: var(--text-primary);">{{ preview_summary.rows_before }}</p>
+                    <p class="il-kpi-value text-xl mt-1">{{ preview_summary.rows_before }}</p>
                 </div>
-                <div class="p-3 rounded-xl border" style="background-color: var(--accent-primary-soft); border-color: var(--accent-primary-border);">
+                <div class="p-3.5" style="background-color: var(--accent-primary-soft);">
                     <p class="il-kpi-label" style="color: var(--accent-primary-text);">Rows After</p>
-                    <p class="mt-1 text-lg font-semibold" style="color: var(--accent-primary-text);">{{ preview_summary.rows_after }}</p>
+                    <p class="il-kpi-value text-xl mt-1" style="color: var(--accent-primary-text);">{{ preview_summary.rows_after }}</p>
                 </div>
-                <div class="il-card-subtle p-3">
+                <div class="p-3.5">
                     <p class="il-kpi-label">Duplicates</p>
-                    <p class="mt-1 text-lg font-semibold" style="color: var(--text-primary);">{{ preview_summary.duplicates_removed }}</p>
+                    <p class="il-kpi-value text-xl mt-1">{{ preview_summary.duplicates_removed }}</p>
                 </div>
-                <div class="il-card-subtle p-3">
+                <div class="p-3.5">
                     <p class="il-kpi-label">Neg. Removed</p>
-                    <p class="mt-1 text-lg font-semibold" style="color: var(--text-primary);">{{ preview_summary.negative_removed }}</p>
+                    <p class="il-kpi-value text-xl mt-1">{{ preview_summary.negative_removed }}</p>
                 </div>
             </div>
 
-            <div class="mt-4">
+            <div class="mt-5">
                 <h4 class="il-kpi-label">Operations Previewed</h4>
                 <ul class="mt-2 list-disc pl-5 text-sm space-y-1" style="color: var(--text-secondary);">
                     {% for op in preview_summary.operations %}
@@ -114,7 +121,7 @@
                 </ul>
             </div>
 
-            <div class="mt-5">
+            <div class="mt-6">
                 <h4 class="il-kpi-label mb-2">Cleaned Data Sample (First 10 Rows)</h4>
                 <div class="il-table-wrap">
                     <table class="il-table">
@@ -138,10 +145,10 @@
                 </div>
             </div>
         {% else %}
-            <div class="il-empty-inner mt-6 flex h-56 items-center justify-center">
-                <div>
-                    <p class="text-sm font-medium" style="color: var(--text-primary);">No cleaning preview generated yet</p>
-                    <p class="il-muted mt-1 text-xs">Choose your options on the left and click <strong>Preview Cleaning</strong> to inspect the exact impact before saving.</p>
+            <div class="il-empty-inner mt-6 flex h-64 items-center justify-center">
+                <div class="max-w-sm">
+                    <p class="il-editorial text-base font-semibold" style="color: var(--text-primary);">No cleaning preview generated yet</p>
+                    <p class="il-muted mt-1.5 text-xs">Choose your options on the left and click <strong>Preview Cleaning</strong> to inspect the exact impact before saving.</p>
                 </div>
             </div>
         {% endif %}

@@ -2,11 +2,11 @@
 
 {% block title %}Forecast Detail — InsightLab{% endblock %}
 {% block breadcrumb %}Intelligence / Forecasting / Detail{% endblock %}
-{% block page_heading %}Forecast Detail: {{ exp.get_model_name_display }}{% endblock %}
+{% block page_heading %}Model Evaluation: {{ exp.get_model_name_display }}{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-    <div class="flex flex-wrap items-center gap-2 text-sm" style="color: var(--text-secondary);">
+<div class="mb-6 pb-4 border-b flex flex-wrap items-center justify-between gap-3" style="border-color: var(--border-default);">
+    <div class="flex flex-wrap items-center gap-2 text-xs il-tech" style="color: var(--text-secondary);">
         <span>Dataset: <strong style="color: var(--text-primary);">{{ exp.dataset.name }}</strong> ({{ exp.dataset_version }})</span>
         <span>&bull;</span>
         <span>Scope: <strong style="color: var(--text-primary);">{{ exp.product_display }}</strong></span>
@@ -18,36 +18,40 @@
     </a>
 </div>
 
-<section class="grid grid-cols-2 gap-4 sm:grid-cols-4 mb-6">
-    <div class="il-card p-5">
+<section class="il-strip mb-6 grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x" style="border-color: var(--border-default);">
+    <div class="p-5">
         <p class="il-kpi-label">Test MAE</p>
         <p class="il-kpi-value mt-2">{{ exp.mae|floatformat:2|default:"—" }}</p>
     </div>
-    <div class="il-card p-5">
+    <div class="p-5">
         <p class="il-kpi-label">Test RMSE</p>
         <p class="il-kpi-value mt-2">{{ exp.rmse|floatformat:2|default:"—" }}</p>
     </div>
-    <div class="il-card p-5">
+    <div class="p-5">
         <p class="il-kpi-label">Test MAPE (%)</p>
         <p class="il-kpi-value mt-2">{{ exp.mape|floatformat:2|default:"—" }}</p>
     </div>
-    <div class="il-card p-5">
+    <div class="p-5">
         <p class="il-kpi-label">Test R&sup2;</p>
         <p class="il-kpi-value mt-2">{{ exp.r2|floatformat:3|default:"—" }}</p>
     </div>
 </section>
 
-<div class="il-card p-6 mb-6">
-    <h3 class="il-title text-base mb-3">Timeline Visualization</h3>
-    <div class="h-72"><canvas id="detailChart"></canvas></div>
-    <p class="il-muted mt-2.5 text-xs">
-        Config: Preprocessing={{ exp.preprocessing_method }}, Seed={{ exp.random_seed }}, {{ exp.mape_note }}
+<div class="il-panel p-6 mb-6">
+    <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+        <p class="il-kicker">Evaluation Curve</p>
+        <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Timeline Visualization</h3>
+    </div>
+    <div class="h-80"><canvas id="detailChart"></canvas></div>
+    <p class="il-tech il-muted mt-3 text-xs">
+        Config: Preprocessing={{ exp.preprocessing_method }}, Seed={{ exp.random_seed }} &bull; {{ exp.mape_note }}
     </p>
 </div>
 
 <section class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
-    <div class="il-card p-6">
-        <h3 class="il-title text-base mb-3">Chronological Test Set (Actual vs. Predicted)</h3>
+    <div class="il-panel p-6">
+        <p class="il-kicker">Held-Out Test Window</p>
+        <h3 class="il-editorial mt-0.5 text-base font-semibold mb-3" style="color: var(--text-primary);">Chronological Test Set (Actual vs. Predicted)</h3>
         <div class="il-table-wrap max-h-72 overflow-y-auto">
             <table class="il-table">
                 <thead>
@@ -60,9 +64,9 @@
                 <tbody>
                     {% for dt, act, pred in test_rows %}
                     <tr>
-                        <td>{{ dt }}</td>
-                        <td>{{ act|floatformat:2 }}</td>
-                        <td class="font-medium" style="color: var(--accent-primary-text);">{{ pred|floatformat:2 }}</td>
+                        <td class="il-tech">{{ dt }}</td>
+                        <td class="il-tech">{{ act|floatformat:2 }}</td>
+                        <td class="il-tech font-medium" style="color: var(--accent-primary-text);">{{ pred|floatformat:2 }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -70,8 +74,9 @@
         </div>
     </div>
 
-    <div class="il-card p-6">
-        <h3 class="il-title text-base mb-3">Future Forecast Values ({{ exp.forecast_horizon }} periods)</h3>
+    <div class="il-panel p-6">
+        <p class="il-kicker">Extrapolation Horizon</p>
+        <h3 class="il-editorial mt-0.5 text-base font-semibold mb-3" style="color: var(--text-primary);">Future Forecast Values ({{ exp.forecast_horizon }} periods)</h3>
         <div class="il-table-wrap max-h-72 overflow-y-auto">
             <table class="il-table">
                 <thead>
@@ -83,8 +88,8 @@
                 <tbody>
                     {% for dt, pred in future_rows %}
                     <tr>
-                        <td>{{ dt }}</td>
-                        <td class="font-semibold" style="color: var(--accent-secondary-text);">{{ pred|floatformat:2 }}</td>
+                        <td class="il-tech">{{ dt }}</td>
+                        <td class="il-tech font-semibold" style="color: var(--accent-amber-text);">{{ pred|floatformat:2 }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -94,14 +99,15 @@
 </section>
 
 {% if exp.insights_json %}
-<div class="il-card p-6">
-    <h3 class="il-title text-base mb-3">Decision Support Suggestions</h3>
+<div class="il-panel p-6">
+    <p class="il-kicker">Analytical Notes</p>
+    <h3 class="il-editorial mt-0.5 text-base font-semibold mb-3" style="color: var(--text-primary);">Decision Support Suggestions</h3>
     <div class="space-y-3">
         {% for ins in exp.insights_json %}
         <div class="il-card-subtle p-4">
             <span class="il-badge il-badge-indigo uppercase text-[10px]">{{ ins.category }}</span>
-            <p class="mt-2 text-sm font-semibold" style="color: var(--text-primary);">{{ ins.title }}</p>
-            <p class="il-subtitle mt-1 text-xs">{{ ins.detail }}</p>
+            <p class="il-editorial mt-2 text-sm font-semibold" style="color: var(--text-primary);">{{ ins.title }}</p>
+            <p class="il-subtitle mt-1 text-xs leading-relaxed">{{ ins.detail }}</p>
         </div>
         {% endfor %}
     </div>
@@ -126,9 +132,9 @@ if (payload && window.InsightLabCharts) {
         data: {
             labels: allDates,
             datasets: [
-                { label: 'Actual (' + payload.target_label + ')', data: actualSeries, ilRole: 'actual-line', borderColor: pal.actual, tension: 0.2, pointRadius: 1.5 },
-                { label: 'Test Predicted', data: testPredSeries, ilRole: 'primary-line', borderColor: pal.indigo, borderDash: [5, 4], tension: 0.2, pointRadius: 2 },
-                { label: 'Future Forecast', data: futureSeries, ilRole: 'teal-line', borderColor: pal.teal, borderDash: [4, 4], tension: 0.2, pointRadius: 2.5 }
+                { label: 'Actual (' + payload.target_label + ')', data: actualSeries, ilRole: 'actual-line', borderColor: pal.actual, borderWidth: 2, tension: 0.2, pointRadius: 1.5 },
+                { label: 'Test Predicted', data: testPredSeries, ilRole: 'primary-line', borderColor: pal.indigo, borderWidth: 2, borderDash: [5, 4], tension: 0.2, pointRadius: 2 },
+                { label: 'Future Forecast', data: futureSeries, ilRole: 'amber-line', borderColor: pal.amber, borderWidth: 2, borderDash: [4, 4], tension: 0.2, pointRadius: 2.5 }
             ]
         },
         options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 10 } } } }

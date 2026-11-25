@@ -6,9 +6,10 @@
 
 {% block content %}
 {% if not has_datasets %}
-<div class="il-empty">
-    <h3 class="il-title text-base">No mapped datasets available</h3>
-    <p class="il-subtitle mt-1 text-sm">Upload and configure a time-series dataset (CSV, Excel, or JSON with a Date column and numerical target) to run forecasts.</p>
+<div class="il-empty py-12">
+    <p class="il-kicker">No Time-Series Ready</p>
+    <h3 class="il-editorial mt-1 text-xl font-semibold" style="color: var(--text-primary);">No mapped datasets available</h3>
+    <p class="il-subtitle mt-1.5 text-sm">Upload and configure a time-series dataset (CSV, Excel, or JSON with a Date column and numerical target) to run forecasts.</p>
     <a href="{% url 'datasets:upload' %}" class="il-btn il-btn-primary mt-5">
         Upload Dataset
     </a>
@@ -21,13 +22,14 @@
 </div>
 {% endif %}
 
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-12 mb-6">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-12 mb-6 items-start">
     <!-- Forecast Configuration Form -->
-    <div class="lg:col-span-4 il-card p-6">
-        <div class="flex items-start justify-between gap-2">
+    <div class="lg:col-span-4 il-panel p-6">
+        <div class="flex items-start justify-between gap-2 pb-4 border-b" style="border-color: var(--border-default);">
             <div>
-                <h2 class="il-title text-base">Configure Forecast Run</h2>
-                <p class="il-subtitle mt-1 text-xs">
+                <p class="il-kicker">Model Parameters</p>
+                <h2 class="il-editorial mt-0.5 text-lg font-semibold" style="color: var(--text-primary);">Configure Forecast Run</h2>
+                <p class="il-subtitle mt-1 text-xs leading-relaxed">
                     Models train and evaluate on strict chronological splits (never random splits) across any mapped date and numerical target column.
                 </p>
             </div>
@@ -38,23 +40,23 @@
             {% csrf_token %}
 
             <div>
-                <label for="{{ form.dataset.id_for_label }}" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">{{ form.dataset.label }}</label>
+                <label for="{{ form.dataset.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">{{ form.dataset.label }}</label>
                 {{ form.dataset }}
             </div>
 
             <div>
-                <label for="{{ form.dataset_version.id_for_label }}" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">{{ form.dataset_version.label }}</label>
+                <label for="{{ form.dataset_version.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">{{ form.dataset_version.label }}</label>
                 {{ form.dataset_version }}
             </div>
 
             <div>
-                <label for="id_target_picker" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Target Metric</label>
+                <label for="id_target_picker" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">Target Metric</label>
                 <select id="id_target_picker" class="block w-full"></select>
                 <div class="hidden">{{ form.target_metric }}</div>
             </div>
 
             <div>
-                <label for="id_product_picker" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Segment / Group Filter</label>
+                <label for="id_product_picker" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">Segment / Group Filter</label>
                 <select id="id_product_picker" class="block w-full">
                     <option value="__ALL__">All Records (Aggregated)</option>
                 </select>
@@ -62,32 +64,32 @@
             </div>
 
             <div>
-                <label for="{{ form.model_name.id_for_label }}" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">{{ form.model_name.label }}</label>
+                <label for="{{ form.model_name.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">{{ form.model_name.label }}</label>
                 {{ form.model_name }}
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label for="{{ form.aggregation_freq.id_for_label }}" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">{{ form.aggregation_freq.label }}</label>
+                    <label for="{{ form.aggregation_freq.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">{{ form.aggregation_freq.label }}</label>
                     {{ form.aggregation_freq }}
                 </div>
                 <div>
-                    <label for="{{ form.preprocessing_method.id_for_label }}" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">{{ form.preprocessing_method.label }}</label>
+                    <label for="{{ form.preprocessing_method.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">{{ form.preprocessing_method.label }}</label>
                     {{ form.preprocessing_method }}
                 </div>
             </div>
 
             <div class="grid grid-cols-3 gap-2.5">
                 <div>
-                    <label for="{{ form.test_size_ratio.id_for_label }}" class="block text-[11px] font-medium mb-1" style="color: var(--text-secondary);">Test Ratio</label>
+                    <label for="{{ form.test_size_ratio.id_for_label }}" class="il-tech block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">Test Ratio</label>
                     {{ form.test_size_ratio }}
                 </div>
                 <div>
-                    <label for="{{ form.forecast_horizon.id_for_label }}" class="block text-[11px] font-medium mb-1" style="color: var(--text-secondary);">Horizon</label>
+                    <label for="{{ form.forecast_horizon.id_for_label }}" class="il-tech block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">Horizon</label>
                     {{ form.forecast_horizon }}
                 </div>
                 <div>
-                    <label for="{{ form.random_seed.id_for_label }}" class="block text-[11px] font-medium mb-1" style="color: var(--text-secondary);">Seed</label>
+                    <label for="{{ form.random_seed.id_for_label }}" class="il-tech block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">Seed</label>
                     {{ form.random_seed }}
                 </div>
             </div>
@@ -101,13 +103,14 @@
     <!-- Results & Visualizations -->
     <div class="lg:col-span-8 space-y-6">
         {% if latest_runs %}
-        <div class="il-card p-6">
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div class="il-panel p-6">
+            <div class="flex flex-wrap items-start justify-between gap-2 pb-3 mb-4 border-b" style="border-color: var(--border-default);">
                 <div>
-                    <h3 class="il-title text-base">
-                        Held-Out Chronological Evaluation ({{ best_run.target_metric }} &bull; {{ best_run.product_display }})
+                    <p class="il-kicker">Chronological Split Evaluation</p>
+                    <h3 class="il-editorial mt-0.5 text-lg font-semibold" style="color: var(--text-primary);">
+                        Held-Out Evaluation ({{ best_run.target_metric }} &bull; {{ best_run.product_display }})
                     </h3>
-                    <p class="il-muted text-xs">
+                    <p class="il-tech il-muted text-xs mt-1">
                         Train: {{ best_run.train_start_date }} to {{ best_run.train_end_date }} ({{ best_run.train_rows }} periods) &bull;
                         Test: {{ best_run.test_start_date }} to {{ best_run.test_end_date }} ({{ best_run.test_rows }} periods)
                     </p>
@@ -133,55 +136,65 @@
                         {% for r in latest_runs %}
                         <tr class="{% if best_run and r.pk == best_run.pk %}il-table-highlight{% endif %}">
                             <td class="font-medium" style="color: var(--text-primary);">{{ r.get_model_name_display }}</td>
-                            <td>{{ r.mae|floatformat:2|default:"—" }}</td>
-                            <td class="font-semibold" style="color: var(--text-primary);">{{ r.rmse|floatformat:2|default:"—" }}</td>
-                            <td>{{ r.mape|floatformat:2|default:"—" }}</td>
-                            <td>{{ r.r2|floatformat:3|default:"—" }}</td>
+                            <td class="il-tech">{{ r.mae|floatformat:2|default:"—" }}</td>
+                            <td class="il-tech font-semibold" style="color: var(--text-primary);">{{ r.rmse|floatformat:2|default:"—" }}</td>
+                            <td class="il-tech">{{ r.mape|floatformat:2|default:"—" }}</td>
+                            <td class="il-tech">{{ r.r2|floatformat:3|default:"—" }}</td>
                             <td class="text-right">
-                                <a href="{% url 'forecasting:detail' r.pk %}" class="il-link">View</a>
+                                <a href="{% url 'forecasting:detail' r.pk %}" class="il-link il-tech text-xs">View &rarr;</a>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <p class="il-muted mt-2.5 text-[11px]">
+            <p class="il-muted mt-3 text-[11px]">
                 Note: {{ best_run.mape_note }} Best model reflects performance on this specific chronological split, not universal algorithm superiority.
             </p>
         </div>
 
-        <div class="il-card p-6">
-            <h3 class="il-title text-base mb-3">Actual vs. Predicted &amp; Future Forecast</h3>
-            <div class="h-72"><canvas id="forecastLineChart"></canvas></div>
+        <div class="il-panel p-6">
+            <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+                <p class="il-kicker">Trajectory &amp; Projection</p>
+                <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Actual vs. Predicted &amp; Future Forecast</h3>
+            </div>
+            <div class="h-80"><canvas id="forecastLineChart"></canvas></div>
         </div>
 
         {% if latest_runs|length > 1 %}
-        <div class="il-card p-6">
-            <h3 class="il-title text-base mb-3">Model Error Comparison (Test RMSE &amp; MAE)</h3>
-            <div class="h-56"><canvas id="forecastCompareChart"></canvas></div>
+        <div class="il-panel p-6">
+            <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+                <p class="il-kicker">Error Benchmark</p>
+                <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Model Error Comparison (Test RMSE &amp; MAE)</h3>
+            </div>
+            <div class="h-60"><canvas id="forecastCompareChart"></canvas></div>
         </div>
         {% endif %}
 
         <!-- Decision Support Insights -->
         {% if active_insights %}
-        <div class="il-card p-6">
-            <h3 class="il-title text-base mb-1">Decision Support Insights</h3>
-            <p class="il-muted text-xs mb-4">Generated from historical observations and forecast outputs.</p>
+        <div class="il-panel p-6">
+            <div class="pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+                <p class="il-kicker">Analytical Interpretation</p>
+                <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Decision Support Insights</h3>
+                <p class="il-muted text-xs mt-0.5">Generated from historical observations and forecast outputs.</p>
+            </div>
             <div class="space-y-3">
                 {% for ins in active_insights %}
                 <div class="il-card-subtle p-4">
                     <span class="il-badge il-badge-indigo uppercase text-[10px]">{{ ins.category }}</span>
-                    <p class="mt-2 text-sm font-semibold" style="color: var(--text-primary);">{{ ins.title }}</p>
-                    <p class="il-subtitle mt-1 text-xs">{{ ins.detail }}</p>
+                    <p class="il-editorial mt-2 text-sm font-semibold" style="color: var(--text-primary);">{{ ins.title }}</p>
+                    <p class="il-subtitle mt-1 text-xs leading-relaxed">{{ ins.detail }}</p>
                 </div>
                 {% endfor %}
             </div>
         </div>
         {% endif %}
         {% else %}
-        <div class="il-empty">
-            <h3 class="il-title text-base">Ready to run predictive forecasting</h3>
-            <p class="il-subtitle mt-1.5 text-sm max-w-md mx-auto">
+        <div class="il-empty py-14">
+            <p class="il-kicker">Ready</p>
+            <h3 class="il-editorial mt-1 text-xl font-semibold" style="color: var(--text-primary);">Ready to run predictive forecasting</h3>
+            <p class="il-subtitle mt-2 text-sm max-w-md mx-auto">
                 Select a time-series dataset and numerical target column on the left, then choose <strong>Compare All 5 Models</strong> or an individual model.
             </p>
         </div>
@@ -190,10 +203,13 @@
 </div>
 
 <!-- Saved Forecast Runs Table -->
-<div class="il-card p-6">
-    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <h3 class="il-title text-base">Saved Forecasting Runs</h3>
-        <a href="{% url 'forecasting:compare' %}" class="il-link text-xs">Open Side-by-Side Comparison &rarr;</a>
+<div class="il-panel p-6">
+    <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b" style="border-color: var(--border-default);">
+        <div>
+            <p class="il-kicker">Run Archive</p>
+            <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Saved Forecasting Runs</h3>
+        </div>
+        <a href="{% url 'forecasting:compare' %}" class="il-link il-tech text-xs">Open Side-by-Side Comparison &rarr;</a>
     </div>
     {% if saved_experiments %}
     <div class="il-table-wrap">
@@ -216,17 +232,17 @@
                     <td class="font-medium" style="color: var(--text-primary);">{{ exp.dataset.name }}</td>
                     <td>{{ exp.target_metric }} ({{ exp.product_display }})</td>
                     <td>{{ exp.get_model_name_display }}</td>
-                    <td>{{ exp.mae|floatformat:2|default:"—" }}</td>
-                    <td class="font-semibold" style="color: var(--text-primary);">{{ exp.rmse|floatformat:2|default:"—" }}</td>
-                    <td>{{ exp.mape|floatformat:2|default:"—" }}</td>
-                    <td class="il-muted whitespace-nowrap">{{ exp.created_at|date:"M d, H:i" }}</td>
+                    <td class="il-tech">{{ exp.mae|floatformat:2|default:"—" }}</td>
+                    <td class="il-tech font-semibold" style="color: var(--text-primary);">{{ exp.rmse|floatformat:2|default:"—" }}</td>
+                    <td class="il-tech">{{ exp.mape|floatformat:2|default:"—" }}</td>
+                    <td class="il-tech il-muted whitespace-nowrap">{{ exp.created_at|date:"M d, H:i" }}</td>
                     <td class="text-right">
-                        <div class="inline-flex items-center gap-2">
-                            <a href="{% url 'forecasting:detail' exp.pk %}" class="il-link">View</a>
+                        <div class="inline-flex items-center gap-2.5">
+                            <a href="{% url 'forecasting:detail' exp.pk %}" class="il-link il-tech text-xs">View</a>
                             <form method="post" action="{% url 'forecasting:delete' exp.pk %}"
                                   data-confirm-message="Delete saved forecast run for {{ exp.dataset.name|escapejs }}?">
                                 {% csrf_token %}
-                                <button type="submit" class="text-xs font-medium cursor-pointer" style="color: var(--status-danger-text);">Delete</button>
+                                <button type="submit" class="il-tech text-xs font-medium cursor-pointer hover:underline" style="color: var(--status-danger-text);">Delete</button>
                             </form>
                         </div>
                     </td>
@@ -306,9 +322,9 @@ if (payload && window.InsightLabCharts) {
         data: {
             labels: allDates,
             datasets: [
-                { label: 'Actual (' + payload.target_label + ')', data: actualSeries, ilRole: 'actual-line', borderColor: pal.actual, tension: 0.2, pointRadius: 1.5 },
-                { label: payload.best_model_label + ' (Test Pred)', data: testPredSeries, ilRole: 'primary-line', borderColor: pal.indigo, borderDash: [5, 4], tension: 0.2, pointRadius: 2 },
-                { label: payload.best_model_label + ' (Future Forecast)', data: futureSeries, ilRole: 'teal-line', borderColor: pal.teal, borderDash: [4, 4], tension: 0.2, pointRadius: 2.5 }
+                { label: 'Actual (' + payload.target_label + ')', data: actualSeries, ilRole: 'actual-line', borderColor: pal.actual, borderWidth: 2, tension: 0.2, pointRadius: 1.5 },
+                { label: payload.best_model_label + ' (Test Pred)', data: testPredSeries, ilRole: 'primary-line', borderColor: pal.indigo, borderWidth: 2, borderDash: [5, 4], tension: 0.2, pointRadius: 2 },
+                { label: payload.best_model_label + ' (Future Forecast)', data: futureSeries, ilRole: 'amber-line', borderColor: pal.amber, borderWidth: 2, borderDash: [4, 4], tension: 0.2, pointRadius: 2.5 }
             ]
         },
         options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 10 } } } }
@@ -321,8 +337,8 @@ if (payload && window.InsightLabCharts) {
             data: {
                 labels: payload.comparison_labels,
                 datasets: [
-                    { label: 'Test RMSE', data: payload.comparison_rmse, ilRole: 'primary-bar', backgroundColor: pal.indigo, borderRadius: 5 },
-                    { label: 'Test MAE', data: payload.comparison_mae, ilRole: 'muted-bar', backgroundColor: pal.mutedBar, borderRadius: 5 }
+                    { label: 'Test RMSE', data: payload.comparison_rmse, ilRole: 'primary-bar', backgroundColor: pal.indigo, borderRadius: 3 },
+                    { label: 'Test MAE', data: payload.comparison_mae, ilRole: 'muted-bar', backgroundColor: pal.mutedBar, borderRadius: 3 }
                 ]
             },
             options: { responsive: true, maintainAspectRatio: false }

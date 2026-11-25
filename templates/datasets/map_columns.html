@@ -5,12 +5,15 @@
 {% block page_heading %}Configure Dataset Schema{% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
-    <div class="lg:col-span-2 il-card p-6">
-        <h2 class="il-title text-base">Assign Analytical Roles</h2>
-        <p class="il-subtitle mt-1 text-sm">
-            Review the detected roles for <strong>{{ dataset.name }}</strong> ({{ total_raw_rows }} rows). Date and Category columns are optional for tabular datasets.
-        </p>
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
+    <div class="lg:col-span-5 il-panel p-6">
+        <div class="pb-4 border-b" style="border-color: var(--border-default);">
+            <p class="il-kicker">Schema Assignment</p>
+            <h2 class="il-editorial mt-0.5 text-lg font-semibold" style="color: var(--text-primary);">Assign Analytical Roles</h2>
+            <p class="il-subtitle mt-1 text-sm">
+                Review the detected roles for <strong>{{ dataset.name }}</strong> (<span class="il-tech">{{ total_raw_rows }} rows</span>). Date and Category columns are optional for tabular datasets.
+            </p>
+        </div>
 
         <form method="post" class="mt-5 space-y-4" novalidate>
             {% csrf_token %}
@@ -25,7 +28,7 @@
 
             {% for field in form %}
             <div>
-                <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
+                <label for="{{ field.id_for_label }}" class="il-tech block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
                     {{ field.label }}
                 </label>
                 {{ field }}
@@ -41,13 +44,14 @@
         </form>
     </div>
 
-    <div class="lg:col-span-3 space-y-6">
-        <div class="il-card p-6">
-            <h3 class="il-title text-base">Automatically Detected Column Types</h3>
-            <div class="mt-3 flex flex-wrap gap-2">
+    <div class="lg:col-span-7 space-y-6">
+        <div class="il-panel p-6">
+            <p class="il-kicker">Type Inference</p>
+            <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Automatically Detected Column Types</h3>
+            <div class="mt-4 flex flex-wrap gap-2">
                 {% for col_name, col_type in column_types.items %}
                 <span class="il-card-subtle inline-flex items-center gap-2 px-3 py-1.5 text-xs">
-                    <strong style="color: var(--text-primary);">{{ col_name }}</strong>
+                    <strong class="il-tech" style="color: var(--text-primary);">{{ col_name }}</strong>
                     <span class="il-badge il-badge-indigo uppercase text-[10px]">{{ col_type }}</span>
                 </span>
                 {% endfor %}
@@ -65,8 +69,9 @@
         </div>
         {% endif %}
 
-        <div class="il-card p-6">
-            <h3 class="il-title text-base">Dataset Preview (First 5 Rows)</h3>
+        <div class="il-panel p-6">
+            <p class="il-kicker">Specimen Preview</p>
+            <h3 class="il-editorial mt-0.5 text-base font-semibold" style="color: var(--text-primary);">Dataset Preview (First 5 Rows)</h3>
             <p class="il-muted mt-1 text-xs">Verify column contents before confirming the analytical schema.</p>
 
             <div class="il-table-wrap mt-4">

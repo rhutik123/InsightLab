@@ -6,12 +6,13 @@
 
 {% block content %}
 <div class="space-y-6">
-    <div class="il-card p-6">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div class="il-panel p-6">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pb-4 border-b" style="border-color: var(--border-default);">
             <div>
-                <h2 class="il-title text-base">Choose Worksheet to Import</h2>
+                <p class="il-kicker">Workbook Ingestion</p>
+                <h2 class="il-editorial mt-0.5 text-lg font-semibold" style="color: var(--text-primary);">Choose Worksheet to Import</h2>
                 <p class="il-subtitle mt-1 text-sm">
-                    Workbook <strong>{{ dataset.original_filename|default:dataset.name }}</strong> ({{ dataset.get_source_format_display }}) contains multiple worksheets. Select the sheet you want to normalize and analyze.
+                    Workbook <strong>{{ dataset.original_filename|default:dataset.name }}</strong> (<span class="il-tech">{{ dataset.get_source_format_display }}</span>) contains multiple worksheets. Select the sheet you want to normalize and analyze.
                 </p>
             </div>
             <span class="il-badge il-badge-indigo shrink-0">
@@ -32,7 +33,7 @@
                                {% if not sheet.is_usable %}disabled{% elif sheet.name == form.sheet_name.value or sheet.name == form.initial.sheet_name %}checked{% endif %}>
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
-                                <span class="text-sm font-semibold" style="color: var(--text-primary);">{{ sheet.name }}</span>
+                                <span class="il-editorial text-sm font-semibold" style="color: var(--text-primary);">{{ sheet.name }}</span>
                                 <span class="il-badge il-badge-muted">
                                     {{ sheet.row_count }} rows &times; {{ sheet.column_count }} cols
                                 </span>
@@ -44,7 +45,7 @@
                             </div>
 
                             {% if sheet.headers %}
-                                <p class="il-subtitle mt-1.5 text-xs">
+                                <p class="il-tech il-subtitle mt-1.5 text-xs">
                                     <strong>Columns:</strong> {{ sheet.headers|join:", " }}
                                 </p>
                             {% endif %}
@@ -85,7 +86,7 @@
                 {% endfor %}
             </div>
 
-            <div class="flex flex-wrap items-center gap-3 pt-2">
+            <div class="flex flex-wrap items-center gap-3 pt-3 border-t" style="border-color: var(--border-default);">
                 <button type="submit" class="il-btn il-btn-primary">
                     Import Selected Worksheet
                 </button>

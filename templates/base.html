@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="InsightLab — Intelligent Data Analytics and Predictive Intelligence Platform. Explore. Analyse. Predict.">
-    <title>{% block title %}InsightLab — Intelligent Data Analytics &amp; Predictive Intelligence{% endblock %}</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235865D8'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-family='Arial,sans-serif' font-size='13' font-weight='bold' fill='white'%3EIL%3C/text%3E%3C/svg%3E">
+    <meta name="description" content="InsightLab — Scientific Editorial Studio for Structured Data Analytics, Forecasting and Research.">
+    <title>{% block title %}InsightLab — Scientific Editorial Studio{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%2324492C'/%3E%3Cpath d='M13 6h6m-4.5 0v5.2l-5.2 9.4A2 2 0 0011 23.5h10a2 2 0 001.7-2.9l-5.2-9.4V6' fill='none' stroke='%23FFFCF5' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M10.4 18.5h11.2' stroke='%23D9662A' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
     <!-- Synchronous pre-paint theme detection prevents flash of wrong theme -->
     <script>
         (function () {
@@ -38,33 +38,37 @@
     <aside id="app-sidebar"
            class="il-sidebar fixed inset-y-0 left-0 z-40 -translate-x-full transform lg:static lg:translate-x-0 flex flex-col shrink-0">
         <div class="il-sidebar-brand flex h-16 items-center justify-between px-4 border-b" style="border-color: var(--border-default);">
-            <a href="{% url 'dashboard' %}" class="flex items-center gap-2.5 min-w-0">
-                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white font-bold text-sm"
-                      style="background-color: var(--accent-primary); box-shadow: var(--shadow-card);">
-                    IL
+            <a href="{% url 'dashboard' %}" class="flex items-center gap-3 min-w-0">
+                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded border"
+                      style="background-color: var(--accent-primary-soft); border-color: var(--accent-primary-border); color: var(--accent-primary-text);">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M9 3h6" />
+                        <path d="M10 3v5.2L4.8 18.1A2 2 0 006.6 21h10.8a2 2 0 001.8-2.9L14 8.2V3" />
+                        <path d="M7.2 15.5h9.6" style="stroke: var(--accent-amber);" />
+                    </svg>
                 </span>
                 <div class="il-sidebar-text min-w-0">
-                    <p class="text-sm font-semibold leading-tight truncate" style="color: var(--text-primary);">InsightLab</p>
-                    <p class="text-[11px] leading-tight truncate" style="color: var(--accent-secondary-text);">Explore. Analyse. Predict.</p>
+                    <p class="il-editorial text-[15px] font-semibold leading-tight truncate" style="color: var(--text-primary);">InsightLab</p>
+                    <p class="il-tech text-[10px] tracking-wider uppercase leading-tight truncate mt-0.5" style="color: var(--text-muted);">Editorial Studio</p>
                 </div>
             </a>
 
             <div class="flex items-center gap-1">
                 <button id="collapse-sidebar-btn" type="button"
-                        class="hidden lg:inline-flex rounded-lg p-1.5 transition-colors hover:bg-[var(--bg-muted)]"
+                        class="hidden lg:inline-flex rounded p-1.5 transition-colors hover:bg-[var(--bg-hover)]"
                         style="color: var(--text-muted);"
                         title="Collapse or expand sidebar"
                         aria-label="Toggle sidebar width"
                         aria-expanded="true">
-                    <svg class="il-collapse-icon h-4 w-4 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <svg class="il-collapse-icon h-4 w-4 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
                 <button id="close-sidebar-btn" type="button"
-                        class="lg:hidden rounded-lg p-1.5 hover:bg-[var(--bg-muted)]"
+                        class="lg:hidden rounded p-1.5 hover:bg-[var(--bg-hover)]"
                         style="color: var(--text-secondary);"
                         aria-label="Close navigation">
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
@@ -76,7 +80,7 @@
 
             <a href="{% url 'dashboard' %}" title="Overview"
                class="il-nav-link {% if active_nav == 'dashboard' %}il-nav-link-active{% endif %}">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
                 <span class="il-sidebar-text truncate">Overview</span>
@@ -84,7 +88,7 @@
 
             <a href="{% url 'datasets:list' %}" title="My Datasets"
                class="il-nav-link {% if active_nav == 'datasets' %}il-nav-link-active{% endif %}">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                 </svg>
                 <span class="il-sidebar-text truncate">My Datasets</span>
@@ -92,7 +96,7 @@
 
             <a href="{% url 'datasets:explorer' %}" title="Data Explorer"
                class="il-nav-link {% if active_nav == 'explorer' %}il-nav-link-active{% endif %}">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
                 <span class="il-sidebar-text truncate">Data Explorer</span>
@@ -100,17 +104,17 @@
 
             <a href="{% url 'datasets:cleaning' %}" title="Data Cleaning"
                class="il-nav-link {% if active_nav == 'cleaning' %}il-nav-link-active{% endif %}">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
                 <span class="il-sidebar-text truncate">Data Cleaning</span>
             </a>
 
-            <p class="il-nav-section il-sidebar-section mt-2">Analytics</p>
+            <p class="il-nav-section il-sidebar-section">Analytics</p>
 
             <a href="{% url 'analytics:analysis' %}" title="Data Analysis"
                class="il-nav-link {% if active_nav == 'analysis' %}il-nav-link-active{% endif %}">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
                 <span class="il-sidebar-text truncate">Data Analysis</span>
@@ -118,7 +122,7 @@
 
             <a href="{% url 'analytics:visualizations' %}" title="Visualizations"
                class="il-nav-link {% if active_nav == 'visualizations' %}il-nav-link-active{% endif %}">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
                 </svg>
@@ -127,17 +131,17 @@
 
             <a href="{% url 'analytics:anomalies' %}" title="Anomaly Detection"
                class="il-nav-link {% if active_nav == 'anomalies' %}il-nav-link-active{% endif %}">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <span class="il-sidebar-text truncate">Anomaly Detection</span>
             </a>
 
-            <p class="il-nav-section il-sidebar-section mt-2">Intelligence</p>
+            <p class="il-nav-section il-sidebar-section">Intelligence</p>
 
             <a href="{% url 'forecasting:home' %}" title="Forecasting"
                class="il-nav-link {% if active_nav == 'forecasting' %}il-nav-link-active{% endif %}">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
                 <span class="il-sidebar-text truncate">Forecasting</span>
@@ -145,7 +149,7 @@
 
             <a href="{% url 'forecasting:compare' %}" title="Model Comparison"
                class="il-nav-link {% if active_nav == 'compare' %}il-nav-link-active{% endif %}">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
                 </svg>
                 <span class="il-sidebar-text truncate">Model Comparison</span>
@@ -153,17 +157,17 @@
 
             <a href="{% url 'forecasting:experiments' %}" title="Experiment Lab"
                class="il-nav-link {% if active_nav == 'experiments' %}il-nav-link-active{% endif %}">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                 </svg>
                 <span class="il-sidebar-text truncate">Experiment Lab</span>
             </a>
 
-            <p class="il-nav-section il-sidebar-section mt-2">Management</p>
+            <p class="il-nav-section il-sidebar-section">Management</p>
 
             <a href="{% url 'reports:list' %}" title="Reports"
                class="il-nav-link {% if active_nav == 'reports' %}il-nav-link-active{% endif %}">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <span class="il-sidebar-text truncate">Reports</span>
@@ -171,7 +175,7 @@
 
             <a href="{% url 'accounts:settings' %}" title="Settings"
                class="il-nav-link {% if active_nav == 'settings' %}il-nav-link-active{% endif %}">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
@@ -181,22 +185,22 @@
 
         <div class="il-sidebar-footer border-t p-3.5 flex items-center justify-between gap-2" style="border-color: var(--border-default);">
             <div class="flex items-center gap-2.5 min-w-0">
-                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
-                      style="background-color: var(--accent-secondary-soft); color: var(--accent-secondary-text);">
+                <span class="il-tech inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border text-xs font-semibold"
+                      style="background-color: var(--bg-surface); border-color: var(--border-strong); color: var(--accent-primary-text);">
                     {{ user.username|slice:":2"|upper }}
                 </span>
                 <div class="il-sidebar-user-meta min-w-0">
                     <p class="truncate text-xs font-semibold" style="color: var(--text-primary);">
                         {{ user.get_full_name|default:user.username }}
                     </p>
-                    <p class="truncate text-[11px]" style="color: var(--text-muted);">{{ user.email|default:"Workspace Member" }}</p>
+                    <p class="il-tech truncate text-[10px]" style="color: var(--text-muted);">{{ user.email|default:"Researcher" }}</p>
                 </div>
             </div>
             <form method="post" action="{% url 'accounts:logout' %}" class="shrink-0">
                 {% csrf_token %}
                 <button type="submit" title="Sign out"
                         class="il-btn il-btn-secondary il-btn-sm">
-                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                     <span class="il-sidebar-text">Sign out</span>
@@ -210,20 +214,20 @@
         <header class="il-topbar sticky top-0 z-20 flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
             <div class="flex items-center gap-3 min-w-0">
                 <button id="open-sidebar-btn" type="button"
-                        class="lg:hidden rounded-lg p-2 hover:bg-[var(--bg-muted)]"
+                        class="lg:hidden rounded p-2 hover:bg-[var(--bg-hover)]"
                         style="color: var(--text-secondary);"
                         aria-label="Open navigation">
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
                 <div class="min-w-0">
-                    <div class="hidden sm:flex items-center gap-1.5 text-[11px] font-medium" style="color: var(--text-muted);">
+                    <div class="hidden sm:flex items-center gap-1.5 il-tech text-[11px]" style="color: var(--text-muted);">
                         <a href="{% url 'dashboard' %}" class="hover:underline" style="color: var(--text-muted);">InsightLab</a>
                         <span>/</span>
                         <span class="truncate" style="color: var(--text-secondary);">{% block breadcrumb %}{{ page_title|default:"Overview" }}{% endblock %}</span>
                     </div>
-                    <h1 class="text-base sm:text-lg font-semibold truncate" style="color: var(--text-primary);">
+                    <h1 class="il-editorial text-base sm:text-lg font-semibold truncate" style="color: var(--text-primary);">
                         {% block page_heading %}{{ page_title|default:"Overview" }}{% endblock %}
                     </h1>
                 </div>
@@ -232,22 +236,24 @@
             <div class="flex items-center gap-2.5 shrink-0">
                 {% block topbar_actions %}{% endblock %}
 
+                <span id="theme-status-label" class="sr-only">system</span>
+
                 <!-- 3-Mode Theme Switcher: System / Light / Dark -->
                 <div class="il-theme-group" role="group" aria-label="Theme mode">
                     <button type="button" data-theme-option="system" aria-pressed="true" class="il-theme-btn" title="Follow OS system theme">
-                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                         <span class="hidden md:inline">System</span>
                     </button>
                     <button type="button" data-theme-option="light" aria-pressed="false" class="il-theme-btn" title="Light theme">
-                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                         <span class="hidden md:inline">Light</span>
                     </button>
                     <button type="button" data-theme-option="dark" aria-pressed="false" class="il-theme-btn" title="Dark theme">
-                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                         </svg>
                         <span class="hidden md:inline">Dark</span>
@@ -255,23 +261,23 @@
                 </div>
 
                 <a href="{% url 'accounts:settings' %}"
-                   class="hidden sm:inline-flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-[var(--bg-muted)]"
+                   class="hidden sm:inline-flex items-center gap-2 rounded border px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-[var(--bg-muted)]"
                    style="border-color: var(--border-default); background-color: var(--bg-surface); color: var(--text-secondary);"
                    title="Account Settings">
-                    <span class="inline-block h-2 w-2 rounded-full" style="background-color: var(--accent-secondary);"></span>
-                    <span class="max-w-[7rem] truncate">{{ user.username }}</span>
+                    <span class="inline-block h-1.5 w-1.5 rounded-full" style="background-color: var(--accent-amber);"></span>
+                    <span class="il-tech max-w-[7rem] truncate">{{ user.username }}</span>
                 </a>
             </div>
         </header>
 
-        <main class="il-main-container flex-1 px-4 py-6 sm:px-6 lg:px-8 max-w-7xl w-full mx-auto">
+        <main class="il-main-container flex-1 px-4 py-7 sm:px-6 lg:px-8 max-w-7xl w-full mx-auto">
             {% if messages %}
                 <div class="mb-6 space-y-2.5">
                     {% for message in messages %}
                         <div data-alert-item
                              class="il-alert flex items-center justify-between gap-3 {% if 'error' in message.tags %}il-alert-danger{% elif 'warning' in message.tags %}il-alert-warning{% elif 'success' in message.tags %}il-alert-success{% else %}il-alert-info{% endif %}">
                             <span>{{ message }}</span>
-                            <button type="button" data-dismiss-alert class="text-xs font-semibold opacity-80 hover:opacity-100 shrink-0 cursor-pointer">
+                            <button type="button" data-dismiss-alert class="il-tech text-xs font-semibold opacity-80 hover:opacity-100 shrink-0 cursor-pointer">
                                 Dismiss
                             </button>
                         </div>
@@ -287,22 +293,32 @@
 <!-- Theme-aware confirmation modal -->
 <div id="il-confirm-modal" class="il-modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="il-confirm-title">
     <div class="il-modal-panel w-full max-w-md p-6">
-        <h3 id="il-confirm-title" class="text-base font-semibold" style="color: var(--text-primary);">Confirm Action</h3>
+        <p class="il-kicker">Confirmation Required</p>
+        <h3 id="il-confirm-title" class="il-editorial mt-1 text-lg font-semibold" style="color: var(--text-primary);">Confirm Action</h3>
         <p id="il-confirm-message" class="mt-2 text-sm" style="color: var(--text-secondary);"></p>
-        <div class="mt-5 flex items-center justify-end gap-2.5">
+        <div class="mt-6 pt-4 border-t flex items-center justify-end gap-2.5" style="border-color: var(--border-default);">
             <button id="il-confirm-cancel" type="button" class="il-btn il-btn-secondary il-btn-sm">Cancel</button>
-            <button id="il-confirm-submit" type="button" class="il-btn il-btn-sm" style="background-color: var(--status-danger); color: #FFFFFF;">Confirm Delete</button>
+            <button id="il-confirm-submit" type="button" class="il-btn il-btn-sm" style="background-color: var(--status-danger); color: #FFFCF5;">Confirm Delete</button>
         </div>
     </div>
 </div>
 
 {% else %}
-<div class="il-auth-shell min-h-full flex flex-col justify-between py-8 px-4 sm:px-6 lg:px-8" style="background-color: var(--bg-app);">
+<div class="il-auth-shell il-grid-bg min-h-full flex flex-col justify-between py-8 px-4 sm:px-6 lg:px-8" style="background-color: var(--bg-app);">
     <div class="flex items-center justify-between max-w-5xl w-full mx-auto">
         <a href="{% url 'accounts:login' %}" class="inline-flex items-center gap-2.5">
-            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white font-bold text-xs"
-                  style="background-color: var(--accent-primary);">IL</span>
-            <span class="text-sm font-semibold" style="color: var(--text-primary);">InsightLab</span>
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded border"
+                  style="background-color: var(--bg-surface); border-color: var(--border-strong); color: var(--accent-primary-text);">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9 3h6" />
+                    <path d="M10 3v5.2L4.8 18.1A2 2 0 006.6 21h10.8a2 2 0 001.8-2.9L14 8.2V3" />
+                    <path d="M7.2 15.5h9.6" style="stroke: var(--accent-amber);" />
+                </svg>
+            </span>
+            <div>
+                <span class="il-editorial text-sm font-semibold block leading-tight" style="color: var(--text-primary);">InsightLab</span>
+                <span class="il-tech text-[10px] tracking-wider uppercase block leading-tight" style="color: var(--text-muted);">Editorial Studio</span>
+            </div>
         </a>
         <div class="il-theme-group" role="group" aria-label="Theme mode">
             <button type="button" data-theme-option="system" aria-pressed="true" class="il-theme-btn">System</button>
@@ -318,7 +334,7 @@
                     <div data-alert-item
                          class="il-alert flex items-center justify-between gap-3 {% if 'error' in message.tags %}il-alert-danger{% elif 'success' in message.tags %}il-alert-success{% else %}il-alert-info{% endif %}">
                         <span>{{ message }}</span>
-                        <button type="button" data-dismiss-alert class="text-xs font-semibold opacity-80 hover:opacity-100 cursor-pointer">
+                        <button type="button" data-dismiss-alert class="il-tech text-xs font-semibold opacity-80 hover:opacity-100 cursor-pointer">
                             Dismiss
                         </button>
                     </div>
@@ -329,7 +345,7 @@
         {% block auth_content %}{% endblock %}
     </div>
 
-    <p class="text-center text-xs" style="color: var(--text-muted);">
+    <p class="il-tech text-center text-[11px] tracking-wider uppercase" style="color: var(--text-muted);">
         InsightLab &bull; Explore. Analyse. Predict.
     </p>
 </div>
