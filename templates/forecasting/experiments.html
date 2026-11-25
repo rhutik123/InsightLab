@@ -1,76 +1,77 @@
 {% extends 'base.html' %}
 
 {% block title %}Experiment Lab — InsightLab{% endblock %}
+{% block breadcrumb %}Intelligence / Experiment Lab{% endblock %}
 {% block page_heading %}Research Experiment Lab{% endblock %}
 
 {% block content %}
-<div class="mb-6 rounded-xl border border-indigo-200 bg-indigo-50/70 px-4 py-3 text-xs text-indigo-950">
-    <strong>Academic Research Focus (MSc IT Study):</strong>
-    <em>An Experimental Study of Machine Learning and Statistical Techniques for Sales Forecasting and Business Decision Support.</em>
+<div class="il-alert il-alert-info mb-6 text-xs">
+    <strong>MSc IT Research Methodology Workspace:</strong>
     Use this lab to run reproducible, seed-controlled comparisons across algorithms, historical window sizes, seasonality features, missing-data imputation, volatility, and segments.
 </div>
 
 {% if not has_datasets %}
-<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
-    <h3 class="text-base font-semibold text-slate-900">No mapped datasets available</h3>
-    <p class="mt-1 text-sm text-slate-600">Upload and configure a time-series dataset (CSV, Excel, or JSON) before running controlled research experiments.</p>
-    <a href="{% url 'datasets:upload' %}"
-       class="mt-5 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+<div class="il-empty">
+    <h3 class="il-title text-base">No mapped datasets available</h3>
+    <p class="il-subtitle mt-1 text-sm">Upload and configure a time-series dataset (CSV, Excel, or JSON) before running controlled research experiments.</p>
+    <a href="{% url 'datasets:upload' %}" class="il-btn il-btn-primary mt-5">
         Upload Dataset
     </a>
 </div>
 {% else %}
 
 {% if error_message %}
-<div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+<div class="il-alert il-alert-warning mb-6">
     {{ error_message }}
 </div>
 {% endif %}
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-12 mb-6">
     <!-- Experiment Configuration -->
-    <div class="lg:col-span-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-        <h2 class="text-base font-semibold text-slate-900">Design Controlled Experiment</h2>
-        <p class="mt-1 text-xs text-slate-600">
-            Reproducible experiments using chronological test evaluation and stored random seeds.
-        </p>
+    <div class="lg:col-span-4 il-card p-6">
+        <div class="flex items-start justify-between gap-2">
+            <div>
+                <h2 class="il-title text-base">Design Controlled Experiment</h2>
+                <p class="il-subtitle mt-1 text-xs">
+                    Reproducible experiments using chronological test evaluation and stored random seeds.
+                </p>
+            </div>
+            <span class="il-badge il-badge-indigo shrink-0">6 Protocols</span>
+        </div>
 
         <form method="post" class="mt-4 space-y-3.5">
             {% csrf_token %}
 
             <div>
-                <label for="{{ form.dataset.id_for_label }}" class="block text-xs font-medium text-slate-700 mb-1">{{ form.dataset.label }}</label>
+                <label for="{{ form.dataset.id_for_label }}" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">{{ form.dataset.label }}</label>
                 {{ form.dataset }}
             </div>
 
             <div>
-                <label for="{{ form.experiment_type.id_for_label }}" class="block text-xs font-medium text-slate-700 mb-1">{{ form.experiment_type.label }}</label>
+                <label for="{{ form.experiment_type.id_for_label }}" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">{{ form.experiment_type.label }}</label>
                 {{ form.experiment_type }}
             </div>
 
             <div>
-                <label for="{{ form.model_name.id_for_label }}" class="block text-xs font-medium text-slate-700 mb-1">{{ form.model_name.label }}</label>
+                <label for="{{ form.model_name.id_for_label }}" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">{{ form.model_name.label }}</label>
                 {{ form.model_name }}
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label for="id_lab_target_picker" class="block text-xs font-medium text-slate-700 mb-1">Target Column</label>
-                    <select id="id_lab_target_picker"
-                            class="block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900">
-                    </select>
+                    <label for="id_lab_target_picker" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Target Column</label>
+                    <select id="id_lab_target_picker" class="block w-full"></select>
                     <div class="hidden">{{ form.target_metric }}</div>
                 </div>
                 <div>
-                    <label for="{{ form.aggregation_freq.id_for_label }}" class="block text-xs font-medium text-slate-700 mb-1">{{ form.aggregation_freq.label }}</label>
+                    <label for="{{ form.aggregation_freq.id_for_label }}" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">{{ form.aggregation_freq.label }}</label>
                     {{ form.aggregation_freq }}
                 </div>
             </div>
 
             <div>
-                <label for="id_lab_product_picker" class="block text-xs font-medium text-slate-700 mb-1">Segment / Group Scope</label>
-                <select id="id_lab_product_picker"
-                        class="block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900">
+                <label for="id_lab_product_picker" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Segment / Group Scope</label>
+                <select id="id_lab_product_picker" class="block w-full">
                     <option value="__ALL__">All Records (Aggregated)</option>
                 </select>
                 <div class="hidden">{{ form.product_name }}</div>
@@ -78,19 +79,18 @@
 
             <div class="grid grid-cols-3 gap-2.5">
                 <div class="col-span-1">
-                    <label for="{{ form.random_seed.id_for_label }}" class="block text-[11px] font-medium text-slate-700 mb-1">Seed</label>
+                    <label for="{{ form.random_seed.id_for_label }}" class="block text-[11px] font-medium mb-1" style="color: var(--text-secondary);">Seed</label>
                     {{ form.random_seed }}
                 </div>
                 <div class="col-span-2">
-                    <label for="{{ form.preprocessing_method.id_for_label }}" class="block text-[11px] font-medium text-slate-700 mb-1">{{ form.preprocessing_method.label }}</label>
+                    <label for="{{ form.preprocessing_method.id_for_label }}" class="block text-[11px] font-medium mb-1" style="color: var(--text-secondary);">{{ form.preprocessing_method.label }}</label>
                     {{ form.preprocessing_method }}
                 </div>
             </div>
 
             <div class="hidden">{{ form.forecast_horizon }}</div>
 
-            <button type="submit"
-                    class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-xs hover:bg-indigo-700">
+            <button type="submit" class="il-btn il-btn-primary w-full py-2.5">
                 Execute Research Experiment
             </button>
         </form>
@@ -99,51 +99,51 @@
     <!-- Active Experiment Comparison -->
     <div class="lg:col-span-8 space-y-6">
         {% if active_batch %}
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-            <h3 class="text-base font-semibold text-slate-900">Experiment Comparison Results</h3>
+        <div class="il-card p-6">
+            <h3 class="il-title text-base">Experiment Comparison Results</h3>
             {% if batch_note %}
-                <p class="mt-1 text-xs text-slate-600">{{ batch_note }}</p>
+                <p class="il-subtitle mt-1 text-xs">{{ batch_note }}</p>
             {% endif %}
 
-            <div class="mt-4 overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-xs">
-                    <thead class="bg-slate-50 text-left font-semibold text-slate-600">
+            <div class="il-table-wrap mt-4">
+                <table class="il-table">
+                    <thead>
                         <tr>
-                            <th class="px-3 py-2">Configuration</th>
-                            <th class="px-3 py-2">Train / Test</th>
-                            <th class="px-3 py-2">MAE</th>
-                            <th class="px-3 py-2">RMSE</th>
-                            <th class="px-3 py-2">MAPE (%)</th>
-                            <th class="px-3 py-2">R&sup2;</th>
+                            <th>Configuration</th>
+                            <th>Train / Test</th>
+                            <th>MAE</th>
+                            <th>RMSE</th>
+                            <th>MAPE (%)</th>
+                            <th>R&sup2;</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody>
                         {% for item in active_batch %}
                         <tr>
-                            <td class="px-3 py-2.5 font-medium text-slate-900">{{ item.experiment_label|default:item.get_model_name_display }}</td>
-                            <td class="px-3 py-2.5 text-slate-600">{{ item.train_rows }} / {{ item.test_rows }}</td>
-                            <td class="px-3 py-2.5">{{ item.mae|floatformat:2|default:"—" }}</td>
-                            <td class="px-3 py-2.5 font-semibold text-indigo-700">{{ item.rmse|floatformat:2|default:"—" }}</td>
-                            <td class="px-3 py-2.5">{{ item.mape|floatformat:2|default:"—" }}</td>
-                            <td class="px-3 py-2.5">{{ item.r2|floatformat:3|default:"—" }}</td>
+                            <td class="font-medium" style="color: var(--text-primary);">{{ item.experiment_label|default:item.get_model_name_display }}</td>
+                            <td class="il-muted">{{ item.train_rows }} / {{ item.test_rows }}</td>
+                            <td>{{ item.mae|floatformat:2|default:"—" }}</td>
+                            <td class="font-semibold" style="color: var(--accent-primary-text);">{{ item.rmse|floatformat:2|default:"—" }}</td>
+                            <td>{{ item.mape|floatformat:2|default:"—" }}</td>
+                            <td>{{ item.r2|floatformat:3|default:"—" }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <p class="mt-3 text-[11px] text-slate-500">
+            <p class="il-muted mt-3 text-[11px]">
                 Academic note: Observed differences summarize empirical performance on this chronological split; no statistical significance is claimed without formal hypothesis testing.
             </p>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-            <h3 class="text-base font-semibold text-slate-900 mb-3">Error Comparison Across Configurations</h3>
+        <div class="il-card p-6">
+            <h3 class="il-title text-base mb-3">Error Comparison Across Configurations</h3>
             <div class="h-64"><canvas id="labCompareChart"></canvas></div>
         </div>
         {% else %}
-        <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
-            <h3 class="text-base font-semibold text-slate-900">Conduct a controlled experiment</h3>
-            <p class="mt-1 text-sm text-slate-600 max-w-md mx-auto">
+        <div class="il-empty">
+            <h3 class="il-title text-base">Conduct a controlled experiment</h3>
+            <p class="il-subtitle mt-1.5 text-sm max-w-md mx-auto">
                 Select one of the 6 academic research protocols on the left—or click any saved experiment below to reload and compare it.
             </p>
         </div>
@@ -152,33 +152,33 @@
 </div>
 
 <!-- Saved Research Experiment History -->
-<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-    <h3 class="text-base font-semibold text-slate-900 mb-3">Saved Research Experiment Records</h3>
+<div class="il-card p-6">
+    <h3 class="il-title text-base mb-3">Saved Research Experiment Records</h3>
     {% if past_research %}
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200 text-xs">
-            <thead class="bg-slate-50 text-left font-semibold text-slate-600">
+    <div class="il-table-wrap">
+        <table class="il-table">
+            <thead>
                 <tr>
-                    <th class="px-3 py-2.5">Research Area</th>
-                    <th class="px-3 py-2.5">Configuration Label</th>
-                    <th class="px-3 py-2.5">Dataset (Target)</th>
-                    <th class="px-3 py-2.5">MAE</th>
-                    <th class="px-3 py-2.5">RMSE</th>
-                    <th class="px-3 py-2.5">Seed</th>
-                    <th class="px-3 py-2.5 text-right">Batch</th>
+                    <th>Research Area</th>
+                    <th>Configuration Label</th>
+                    <th>Dataset (Target)</th>
+                    <th>MAE</th>
+                    <th>RMSE</th>
+                    <th>Seed</th>
+                    <th class="text-right">Batch</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody>
                 {% for exp in past_research %}
                 <tr>
-                    <td class="px-3 py-2.5 font-medium text-slate-900">{{ exp.get_experiment_type_display }}</td>
-                    <td class="px-3 py-2.5 text-slate-700">{{ exp.experiment_label|default:exp.get_model_name_display }}</td>
-                    <td class="px-3 py-2.5 text-slate-600">{{ exp.dataset.name }} ({{ exp.target_metric }})</td>
-                    <td class="px-3 py-2.5">{{ exp.mae|floatformat:2|default:"—" }}</td>
-                    <td class="px-3 py-2.5 font-semibold">{{ exp.rmse|floatformat:2|default:"—" }}</td>
-                    <td class="px-3 py-2.5 font-mono text-slate-500">{{ exp.random_seed }}</td>
-                    <td class="px-3 py-2.5 text-right">
-                        <a href="?group={{ exp.experiment_group }}" class="text-indigo-600 hover:text-indigo-700 font-medium">
+                    <td class="font-medium" style="color: var(--text-primary);">{{ exp.get_experiment_type_display }}</td>
+                    <td>{{ exp.experiment_label|default:exp.get_model_name_display }}</td>
+                    <td>{{ exp.dataset.name }} ({{ exp.target_metric }})</td>
+                    <td>{{ exp.mae|floatformat:2|default:"—" }}</td>
+                    <td class="font-semibold" style="color: var(--text-primary);">{{ exp.rmse|floatformat:2|default:"—" }}</td>
+                    <td class="font-mono il-muted">{{ exp.random_seed }}</td>
+                    <td class="text-right">
+                        <a href="?group={{ exp.experiment_group }}" class="il-link">
                             Load Batch
                         </a>
                     </td>
@@ -188,7 +188,7 @@
         </table>
     </div>
     {% else %}
-        <p class="text-sm text-slate-500">No research experiments recorded yet.</p>
+        <p class="il-muted text-sm">No research experiments recorded yet.</p>
     {% endif %}
 </div>
 {% endif %}
@@ -242,14 +242,15 @@ if (labDs) {
 }
 
 const labChartData = JSON.parse(document.getElementById('lab-chart-payload').textContent);
-if (labChartData && typeof Chart !== 'undefined') {
-    new Chart(document.getElementById('labCompareChart'), {
+if (labChartData && window.InsightLabCharts) {
+    const pal = window.InsightLabCharts.getPalette();
+    window.InsightLabCharts.create(document.getElementById('labCompareChart'), {
         type: 'bar',
         data: {
             labels: labChartData.labels,
             datasets: [
-                { label: 'RMSE', data: labChartData.rmse, backgroundColor: '#4f46e5', borderRadius: 5 },
-                { label: 'MAE', data: labChartData.mae, backgroundColor: '#94a3b8', borderRadius: 5 }
+                { label: 'RMSE', data: labChartData.rmse, ilRole: 'primary-bar', backgroundColor: pal.indigo, borderRadius: 5 },
+                { label: 'MAE', data: labChartData.mae, ilRole: 'muted-bar', backgroundColor: pal.mutedBar, borderRadius: 5 }
             ]
         },
         options: { responsive: true, maintainAspectRatio: false }

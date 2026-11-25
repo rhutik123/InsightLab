@@ -1,97 +1,98 @@
 {% extends 'base.html' %}
 
 {% block title %}Forecasting — InsightLab{% endblock %}
-{% block page_heading %}Predictive Time-Series Forecasting{% endblock %}
+{% block breadcrumb %}Intelligence / Forecasting{% endblock %}
+{% block page_heading %}Time-Series Forecasting Workspace{% endblock %}
 
 {% block content %}
 {% if not has_datasets %}
-<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
-    <h3 class="text-base font-semibold text-slate-900">No mapped datasets available</h3>
-    <p class="mt-1 text-sm text-slate-600">Upload and configure a time-series dataset (CSV, Excel, or JSON with a Date column and numerical target) to run forecasts.</p>
-    <a href="{% url 'datasets:upload' %}"
-       class="mt-5 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+<div class="il-empty">
+    <h3 class="il-title text-base">No mapped datasets available</h3>
+    <p class="il-subtitle mt-1 text-sm">Upload and configure a time-series dataset (CSV, Excel, or JSON with a Date column and numerical target) to run forecasts.</p>
+    <a href="{% url 'datasets:upload' %}" class="il-btn il-btn-primary mt-5">
         Upload Dataset
     </a>
 </div>
 {% else %}
 
 {% if error_message %}
-<div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+<div class="il-alert il-alert-warning mb-6">
     {{ error_message }}
 </div>
 {% endif %}
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-12 mb-6">
     <!-- Forecast Configuration Form -->
-    <div class="lg:col-span-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-        <h2 class="text-base font-semibold text-slate-900">Configure Forecast Run</h2>
-        <p class="mt-1 text-xs text-slate-600">
-            Models train and evaluate on strict chronological splits (never random splits) across any mapped date and numerical target column.
-        </p>
+    <div class="lg:col-span-4 il-card p-6">
+        <div class="flex items-start justify-between gap-2">
+            <div>
+                <h2 class="il-title text-base">Configure Forecast Run</h2>
+                <p class="il-subtitle mt-1 text-xs">
+                    Models train and evaluate on strict chronological splits (never random splits) across any mapped date and numerical target column.
+                </p>
+            </div>
+            <span class="il-badge il-badge-teal shrink-0">Leakage-Free</span>
+        </div>
 
         <form method="post" class="mt-4 space-y-3.5">
             {% csrf_token %}
 
             <div>
-                <label for="{{ form.dataset.id_for_label }}" class="block text-xs font-medium text-slate-700 mb-1">{{ form.dataset.label }}</label>
+                <label for="{{ form.dataset.id_for_label }}" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">{{ form.dataset.label }}</label>
                 {{ form.dataset }}
             </div>
 
             <div>
-                <label for="{{ form.dataset_version.id_for_label }}" class="block text-xs font-medium text-slate-700 mb-1">{{ form.dataset_version.label }}</label>
+                <label for="{{ form.dataset_version.id_for_label }}" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">{{ form.dataset_version.label }}</label>
                 {{ form.dataset_version }}
             </div>
 
             <div>
-                <label for="id_target_picker" class="block text-xs font-medium text-slate-700 mb-1">Target Metric</label>
-                <select id="id_target_picker"
-                        class="block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900">
-                </select>
+                <label for="id_target_picker" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Target Metric</label>
+                <select id="id_target_picker" class="block w-full"></select>
                 <div class="hidden">{{ form.target_metric }}</div>
             </div>
 
             <div>
-                <label for="id_product_picker" class="block text-xs font-medium text-slate-700 mb-1">Segment / Group Filter</label>
-                <select id="id_product_picker"
-                        class="block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900">
+                <label for="id_product_picker" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Segment / Group Filter</label>
+                <select id="id_product_picker" class="block w-full">
                     <option value="__ALL__">All Records (Aggregated)</option>
                 </select>
                 <div class="hidden">{{ form.product_name }}</div>
             </div>
 
             <div>
-                <label for="{{ form.model_name.id_for_label }}" class="block text-xs font-medium text-slate-700 mb-1">{{ form.model_name.label }}</label>
+                <label for="{{ form.model_name.id_for_label }}" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">{{ form.model_name.label }}</label>
                 {{ form.model_name }}
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label for="{{ form.aggregation_freq.id_for_label }}" class="block text-xs font-medium text-slate-700 mb-1">{{ form.aggregation_freq.label }}</label>
+                    <label for="{{ form.aggregation_freq.id_for_label }}" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">{{ form.aggregation_freq.label }}</label>
                     {{ form.aggregation_freq }}
                 </div>
                 <div>
-                    <label for="{{ form.preprocessing_method.id_for_label }}" class="block text-xs font-medium text-slate-700 mb-1">{{ form.preprocessing_method.label }}</label>
+                    <label for="{{ form.preprocessing_method.id_for_label }}" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">{{ form.preprocessing_method.label }}</label>
                     {{ form.preprocessing_method }}
                 </div>
             </div>
 
             <div class="grid grid-cols-3 gap-2.5">
                 <div>
-                    <label for="{{ form.test_size_ratio.id_for_label }}" class="block text-[11px] font-medium text-slate-700 mb-1">Test Ratio</label>
+                    <label for="{{ form.test_size_ratio.id_for_label }}" class="block text-[11px] font-medium mb-1" style="color: var(--text-secondary);">Test Ratio</label>
                     {{ form.test_size_ratio }}
                 </div>
                 <div>
-                    <label for="{{ form.forecast_horizon.id_for_label }}" class="block text-[11px] font-medium text-slate-700 mb-1">Horizon</label>
+                    <label for="{{ form.forecast_horizon.id_for_label }}" class="block text-[11px] font-medium mb-1" style="color: var(--text-secondary);">Horizon</label>
                     {{ form.forecast_horizon }}
                 </div>
                 <div>
-                    <label for="{{ form.random_seed.id_for_label }}" class="block text-[11px] font-medium text-slate-700 mb-1">Seed</label>
+                    <label for="{{ form.random_seed.id_for_label }}" class="block text-[11px] font-medium mb-1" style="color: var(--text-secondary);">Seed</label>
                     {{ form.random_seed }}
                 </div>
             </div>
 
-            <button type="submit"
-                    class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-xs hover:bg-indigo-700">
+            <button type="submit" class="il-btn il-btn-primary w-full py-2.5">
                 Run Forecast &amp; Evaluate
             </button>
         </form>
@@ -100,87 +101,87 @@
     <!-- Results & Visualizations -->
     <div class="lg:col-span-8 space-y-6">
         {% if latest_runs %}
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <div class="il-card p-6">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <div>
-                    <h3 class="text-base font-semibold text-slate-900">
+                    <h3 class="il-title text-base">
                         Held-Out Chronological Evaluation ({{ best_run.target_metric }} &bull; {{ best_run.product_display }})
                     </h3>
-                    <p class="text-xs text-slate-500">
+                    <p class="il-muted text-xs">
                         Train: {{ best_run.train_start_date }} to {{ best_run.train_end_date }} ({{ best_run.train_rows }} periods) &bull;
                         Test: {{ best_run.test_start_date }} to {{ best_run.test_end_date }} ({{ best_run.test_rows }} periods)
                     </p>
                 </div>
-                <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                <span class="il-badge il-badge-teal">
                     Lowest Test RMSE: {{ best_run.get_model_name_display }}
                 </span>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-xs">
-                    <thead class="bg-slate-50 text-left font-semibold text-slate-600">
+            <div class="il-table-wrap">
+                <table class="il-table">
+                    <thead>
                         <tr>
-                            <th class="px-3 py-2">Model</th>
-                            <th class="px-3 py-2">MAE</th>
-                            <th class="px-3 py-2">RMSE</th>
-                            <th class="px-3 py-2">MAPE (%)</th>
-                            <th class="px-3 py-2">R&sup2;</th>
-                            <th class="px-3 py-2 text-right">Details</th>
+                            <th>Model</th>
+                            <th>MAE</th>
+                            <th>RMSE</th>
+                            <th>MAPE (%)</th>
+                            <th>R&sup2;</th>
+                            <th class="text-right">Details</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody>
                         {% for r in latest_runs %}
-                        <tr class="{% if best_run and r.pk == best_run.pk %}bg-indigo-50/50{% endif %}">
-                            <td class="px-3 py-2.5 font-medium text-slate-900">{{ r.get_model_name_display }}</td>
-                            <td class="px-3 py-2.5">{{ r.mae|floatformat:2|default:"—" }}</td>
-                            <td class="px-3 py-2.5 font-semibold">{{ r.rmse|floatformat:2|default:"—" }}</td>
-                            <td class="px-3 py-2.5">{{ r.mape|floatformat:2|default:"—" }}</td>
-                            <td class="px-3 py-2.5">{{ r.r2|floatformat:3|default:"—" }}</td>
-                            <td class="px-3 py-2.5 text-right">
-                                <a href="{% url 'forecasting:detail' r.pk %}" class="text-indigo-600 hover:text-indigo-700 font-medium">View</a>
+                        <tr class="{% if best_run and r.pk == best_run.pk %}il-table-highlight{% endif %}">
+                            <td class="font-medium" style="color: var(--text-primary);">{{ r.get_model_name_display }}</td>
+                            <td>{{ r.mae|floatformat:2|default:"—" }}</td>
+                            <td class="font-semibold" style="color: var(--text-primary);">{{ r.rmse|floatformat:2|default:"—" }}</td>
+                            <td>{{ r.mape|floatformat:2|default:"—" }}</td>
+                            <td>{{ r.r2|floatformat:3|default:"—" }}</td>
+                            <td class="text-right">
+                                <a href="{% url 'forecasting:detail' r.pk %}" class="il-link">View</a>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <p class="mt-2 text-[11px] text-slate-500">
+            <p class="il-muted mt-2.5 text-[11px]">
                 Note: {{ best_run.mape_note }} Best model reflects performance on this specific chronological split, not universal algorithm superiority.
             </p>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-            <h3 class="text-base font-semibold text-slate-900 mb-3">Actual vs. Predicted &amp; Future Forecast</h3>
+        <div class="il-card p-6">
+            <h3 class="il-title text-base mb-3">Actual vs. Predicted &amp; Future Forecast</h3>
             <div class="h-72"><canvas id="forecastLineChart"></canvas></div>
         </div>
 
         {% if latest_runs|length > 1 %}
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-            <h3 class="text-base font-semibold text-slate-900 mb-3">Model Error Comparison (Test RMSE &amp; MAE)</h3>
+        <div class="il-card p-6">
+            <h3 class="il-title text-base mb-3">Model Error Comparison (Test RMSE &amp; MAE)</h3>
             <div class="h-56"><canvas id="forecastCompareChart"></canvas></div>
         </div>
         {% endif %}
 
         <!-- Decision Support Insights -->
         {% if active_insights %}
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-            <h3 class="text-base font-semibold text-slate-900 mb-1">Decision Support Insights</h3>
-            <p class="text-xs text-slate-500 mb-4">Generated from historical observations and forecast outputs.</p>
+        <div class="il-card p-6">
+            <h3 class="il-title text-base mb-1">Decision Support Insights</h3>
+            <p class="il-muted text-xs mb-4">Generated from historical observations and forecast outputs.</p>
             <div class="space-y-3">
                 {% for ins in active_insights %}
-                <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-                    <span class="text-xs font-semibold uppercase tracking-wide text-indigo-700">{{ ins.category }}</span>
-                    <p class="mt-1 text-sm font-semibold text-slate-900">{{ ins.title }}</p>
-                    <p class="mt-1 text-xs text-slate-600">{{ ins.detail }}</p>
+                <div class="il-card-subtle p-4">
+                    <span class="il-badge il-badge-indigo uppercase text-[10px]">{{ ins.category }}</span>
+                    <p class="mt-2 text-sm font-semibold" style="color: var(--text-primary);">{{ ins.title }}</p>
+                    <p class="il-subtitle mt-1 text-xs">{{ ins.detail }}</p>
                 </div>
                 {% endfor %}
             </div>
         </div>
         {% endif %}
         {% else %}
-        <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
-            <h3 class="text-base font-semibold text-slate-900">Ready to run predictive forecasting</h3>
-            <p class="mt-1 text-sm text-slate-600 max-w-md mx-auto">
+        <div class="il-empty">
+            <h3 class="il-title text-base">Ready to run predictive forecasting</h3>
+            <p class="il-subtitle mt-1.5 text-sm max-w-md mx-auto">
                 Select a time-series dataset and numerical target column on the left, then choose <strong>Compare All 5 Models</strong> or an individual model.
             </p>
         </div>
@@ -189,42 +190,43 @@
 </div>
 
 <!-- Saved Forecast Runs Table -->
-<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-    <div class="flex items-center justify-between mb-3">
-        <h3 class="text-base font-semibold text-slate-900">Saved Forecasting Runs</h3>
-        <a href="{% url 'forecasting:compare' %}" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">Open Side-by-Side Comparison &rarr;</a>
+<div class="il-card p-6">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <h3 class="il-title text-base">Saved Forecasting Runs</h3>
+        <a href="{% url 'forecasting:compare' %}" class="il-link text-xs">Open Side-by-Side Comparison &rarr;</a>
     </div>
     {% if saved_experiments %}
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200 text-xs">
-            <thead class="bg-slate-50 text-left font-semibold text-slate-600">
+    <div class="il-table-wrap">
+        <table class="il-table">
+            <thead>
                 <tr>
-                    <th class="px-3 py-2.5">Dataset</th>
-                    <th class="px-3 py-2.5">Target &amp; Scope</th>
-                    <th class="px-3 py-2.5">Model</th>
-                    <th class="px-3 py-2.5">MAE</th>
-                    <th class="px-3 py-2.5">RMSE</th>
-                    <th class="px-3 py-2.5">MAPE (%)</th>
-                    <th class="px-3 py-2.5">Date</th>
-                    <th class="px-3 py-2.5 text-right">Actions</th>
+                    <th>Dataset</th>
+                    <th>Target &amp; Scope</th>
+                    <th>Model</th>
+                    <th>MAE</th>
+                    <th>RMSE</th>
+                    <th>MAPE (%)</th>
+                    <th>Date</th>
+                    <th class="text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody>
                 {% for exp in saved_experiments %}
                 <tr>
-                    <td class="px-3 py-2.5 font-medium text-slate-900">{{ exp.dataset.name }}</td>
-                    <td class="px-3 py-2.5 text-slate-700">{{ exp.target_metric }} ({{ exp.product_display }})</td>
-                    <td class="px-3 py-2.5 text-slate-700">{{ exp.get_model_name_display }}</td>
-                    <td class="px-3 py-2.5">{{ exp.mae|floatformat:2|default:"—" }}</td>
-                    <td class="px-3 py-2.5 font-semibold">{{ exp.rmse|floatformat:2|default:"—" }}</td>
-                    <td class="px-3 py-2.5">{{ exp.mape|floatformat:2|default:"—" }}</td>
-                    <td class="px-3 py-2.5 text-slate-500">{{ exp.created_at|date:"M d, H:i" }}</td>
-                    <td class="px-3 py-2.5 text-right">
+                    <td class="font-medium" style="color: var(--text-primary);">{{ exp.dataset.name }}</td>
+                    <td>{{ exp.target_metric }} ({{ exp.product_display }})</td>
+                    <td>{{ exp.get_model_name_display }}</td>
+                    <td>{{ exp.mae|floatformat:2|default:"—" }}</td>
+                    <td class="font-semibold" style="color: var(--text-primary);">{{ exp.rmse|floatformat:2|default:"—" }}</td>
+                    <td>{{ exp.mape|floatformat:2|default:"—" }}</td>
+                    <td class="il-muted whitespace-nowrap">{{ exp.created_at|date:"M d, H:i" }}</td>
+                    <td class="text-right">
                         <div class="inline-flex items-center gap-2">
-                            <a href="{% url 'forecasting:detail' exp.pk %}" class="text-indigo-600 hover:text-indigo-700 font-medium">View</a>
-                            <form method="post" action="{% url 'forecasting:delete' exp.pk %}">
+                            <a href="{% url 'forecasting:detail' exp.pk %}" class="il-link">View</a>
+                            <form method="post" action="{% url 'forecasting:delete' exp.pk %}"
+                                  data-confirm-message="Delete saved forecast run for {{ exp.dataset.name|escapejs }}?">
                                 {% csrf_token %}
-                                <button type="submit" class="text-red-600 hover:text-red-700 font-medium">Delete</button>
+                                <button type="submit" class="text-xs font-medium cursor-pointer" style="color: var(--status-danger-text);">Delete</button>
                             </form>
                         </div>
                     </td>
@@ -234,7 +236,7 @@
         </table>
     </div>
     {% else %}
-        <p class="text-sm text-slate-500">No forecast runs saved yet.</p>
+        <p class="il-muted text-sm">No forecast runs saved yet.</p>
     {% endif %}
 </div>
 {% endif %}
@@ -291,21 +293,22 @@ if (dsSelect) {
 }
 
 const payload = JSON.parse(document.getElementById('forecast-chart-payload').textContent);
-if (payload && typeof Chart !== 'undefined') {
+if (payload && window.InsightLabCharts) {
+    const pal = window.InsightLabCharts.getPalette();
     const allDates = payload.history_dates.concat(payload.future_dates);
     const actualSeries = payload.history_actuals.concat(payload.future_dates.map(() => null));
     const trainPadding = new Array(payload.history_dates.length - payload.test_dates.length).fill(null);
     const testPredSeries = trainPadding.concat(payload.test_predictions).concat(payload.future_dates.map(() => null));
     const futureSeries = new Array(payload.history_dates.length).fill(null).concat(payload.future_predictions);
 
-    new Chart(document.getElementById('forecastLineChart'), {
+    window.InsightLabCharts.create(document.getElementById('forecastLineChart'), {
         type: 'line',
         data: {
             labels: allDates,
             datasets: [
-                { label: 'Actual (' + payload.target_label + ')', data: actualSeries, borderColor: '#0f172a', tension: 0.2, pointRadius: 1.5 },
-                { label: payload.best_model_label + ' (Test Pred)', data: testPredSeries, borderColor: '#4f46e5', borderDash: [5, 4], tension: 0.2, pointRadius: 2 },
-                { label: payload.best_model_label + ' (Future Forecast)', data: futureSeries, borderColor: '#10b981', borderDash: [4, 4], tension: 0.2, pointRadius: 2.5 }
+                { label: 'Actual (' + payload.target_label + ')', data: actualSeries, ilRole: 'actual-line', borderColor: pal.actual, tension: 0.2, pointRadius: 1.5 },
+                { label: payload.best_model_label + ' (Test Pred)', data: testPredSeries, ilRole: 'primary-line', borderColor: pal.indigo, borderDash: [5, 4], tension: 0.2, pointRadius: 2 },
+                { label: payload.best_model_label + ' (Future Forecast)', data: futureSeries, ilRole: 'teal-line', borderColor: pal.teal, borderDash: [4, 4], tension: 0.2, pointRadius: 2.5 }
             ]
         },
         options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 10 } } } }
@@ -313,13 +316,13 @@ if (payload && typeof Chart !== 'undefined') {
 
     const compCanvas = document.getElementById('forecastCompareChart');
     if (compCanvas && payload.comparison_labels) {
-        new Chart(compCanvas, {
+        window.InsightLabCharts.create(compCanvas, {
             type: 'bar',
             data: {
                 labels: payload.comparison_labels,
                 datasets: [
-                    { label: 'Test RMSE', data: payload.comparison_rmse, backgroundColor: '#4f46e5', borderRadius: 5 },
-                    { label: 'Test MAE', data: payload.comparison_mae, backgroundColor: '#94a3b8', borderRadius: 5 }
+                    { label: 'Test RMSE', data: payload.comparison_rmse, ilRole: 'primary-bar', backgroundColor: pal.indigo, borderRadius: 5 },
+                    { label: 'Test MAE', data: payload.comparison_mae, ilRole: 'muted-bar', backgroundColor: pal.mutedBar, borderRadius: 5 }
                 ]
             },
             options: { responsive: true, maintainAspectRatio: false }

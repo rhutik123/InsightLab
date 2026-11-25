@@ -1,35 +1,38 @@
 {% extends 'base.html' %}
 
-{% block title %}Dashboard — InsightLab{% endblock %}
-
+{% block title %}Overview — InsightLab{% endblock %}
+{% block breadcrumb %}Workspace / Overview{% endblock %}
 {% block page_heading %}Workspace Overview{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'datasets:upload' %}" class="hidden sm:inline-flex il-btn il-btn-primary il-btn-sm">
+    + Upload Dataset
+</a>
+{% endblock %}
 
 {% block content %}
 {% if not has_datasets %}
-<div class="mb-6 rounded-2xl border border-indigo-200 bg-white p-6 shadow-xs">
+<div class="il-card mb-6 p-6" style="border-color: var(--accent-primary-border);">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <span class="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
-                InsightLab &bull; Transform Data into Meaningful Insights
+            <span class="il-badge il-badge-indigo">
+                InsightLab &bull; Explore. Analyse. Predict.
             </span>
-            <h2 class="mt-2 text-lg font-semibold text-slate-900">
+            <h2 class="il-title mt-2.5 text-lg">
                 Welcome, {{ user.first_name|default:user.username }}! Your analytics workspace is ready.
             </h2>
-            <p class="mt-1 text-sm text-slate-600 max-w-2xl">
+            <p class="il-subtitle mt-1 text-sm max-w-2xl">
                 Upload any structured CSV, Excel (.xlsx/.xls), or JSON dataset (sales, web traffic, expenses, inventory, or operational metrics) to run automated profiling, data cleaning, exploratory analysis, anomaly detection, and predictive modeling.
             </p>
         </div>
         <div class="flex shrink-0 flex-wrap gap-2">
-            <a href="{% url 'datasets:sample_csv' %}?type=traffic"
-               class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">
+            <a href="{% url 'datasets:sample_csv' %}?type=traffic" class="il-btn il-btn-secondary il-btn-sm">
                 Sample Traffic CSV
             </a>
-            <a href="{% url 'datasets:sample_csv' %}?type=sales"
-               class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">
+            <a href="{% url 'datasets:sample_csv' %}?type=sales" class="il-btn il-btn-secondary il-btn-sm">
                 Sample Sales CSV
             </a>
-            <a href="{% url 'datasets:upload' %}"
-               class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-indigo-700">
+            <a href="{% url 'datasets:upload' %}" class="il-btn il-btn-primary il-btn-sm">
                 + Upload Dataset
             </a>
         </div>
@@ -37,46 +40,74 @@
 </div>
 {% endif %}
 
-<!-- General Workspace KPI Cards -->
+<!-- Workspace Summary KPI Cards -->
 <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-6">
-    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total Datasets</p>
-        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total_datasets }}</p>
-        <p class="mt-1 text-xs text-slate-500">Uploaded to your workspace</p>
+    <div class="il-card il-card-hover p-5">
+        <div class="flex items-center justify-between gap-2">
+            <p class="il-kpi-label">Total Datasets</p>
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg" style="background-color: var(--accent-primary-soft); color: var(--accent-primary-text);">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                </svg>
+            </span>
+        </div>
+        <p class="il-kpi-value mt-2">{{ total_datasets }}</p>
+        <p class="il-muted mt-1 text-xs">Uploaded to your workspace</p>
     </div>
 
-    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total Records</p>
-        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total_records }}</p>
-        <p class="mt-1 text-xs text-slate-500">Rows across active datasets</p>
+    <div class="il-card il-card-hover p-5">
+        <div class="flex items-center justify-between gap-2">
+            <p class="il-kpi-label">Total Records</p>
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg" style="background-color: var(--accent-secondary-soft); color: var(--accent-secondary-text);">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+            </span>
+        </div>
+        <p class="il-kpi-value mt-2">{{ total_records }}</p>
+        <p class="il-muted mt-1 text-xs">Rows across active datasets</p>
     </div>
 
-    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Numerical Columns</p>
-        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total_numeric_columns }}</p>
-        <p class="mt-1 text-xs text-slate-500">{{ total_categorical_columns }} categorical feature(s) detected</p>
+    <div class="il-card il-card-hover p-5">
+        <div class="flex items-center justify-between gap-2">
+            <p class="il-kpi-label">Numerical Columns</p>
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg" style="background-color: var(--accent-primary-soft); color: var(--accent-primary-text);">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+            </span>
+        </div>
+        <p class="il-kpi-value mt-2">{{ total_numeric_columns }}</p>
+        <p class="il-muted mt-1 text-xs">{{ total_categorical_columns }} categorical feature(s) detected</p>
     </div>
 
-    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Recent Analyses</p>
-        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total_analyses }}</p>
-        <p class="mt-1 text-xs text-slate-500">Saved models, experiments &amp; reports</p>
+    <div class="il-card il-card-hover p-5">
+        <div class="flex items-center justify-between gap-2">
+            <p class="il-kpi-label">Recent Analyses</p>
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg" style="background-color: var(--accent-amber-soft); color: var(--accent-amber-text);">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+            </span>
+        </div>
+        <p class="il-kpi-value mt-2">{{ total_analyses }}</p>
+        <p class="il-muted mt-1 text-xs">Saved models, experiments &amp; reports</p>
     </div>
 </section>
 
 <!-- Dataset-Aware Visualizations Row -->
 <section class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
-    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h3 class="text-base font-semibold text-slate-900">
+    <div class="il-card p-6">
+        <div class="flex items-start justify-between gap-3 mb-4">
+            <div class="min-w-0">
+                <h3 class="il-title text-base truncate">
                     {% if dashboard_charts and dashboard_charts.primary_chart %}{{ dashboard_charts.primary_chart.title }}{% else %}Dataset Overview &amp; Trends{% endif %}
                 </h3>
                 {% if dashboard_charts and dashboard_charts.primary_chart %}
-                    <p class="text-xs text-slate-500">{{ dashboard_charts.primary_chart.subtitle }}</p>
+                    <p class="il-muted text-xs mt-0.5 truncate">{{ dashboard_charts.primary_chart.subtitle }}</p>
                 {% endif %}
             </div>
-            <a href="{% url 'analytics:analysis' %}" class="shrink-0 whitespace-nowrap text-xs font-medium text-indigo-600 hover:text-indigo-700">
+            <a href="{% url 'analytics:analysis' %}" class="il-link shrink-0 whitespace-nowrap text-xs">
                 Open Analysis &rarr;
             </a>
         </div>
@@ -85,26 +116,26 @@
                 <canvas id="dashPrimaryChart"></canvas>
             </div>
         {% else %}
-            <div class="flex h-56 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center">
+            <div class="il-empty-inner flex h-56 items-center justify-center">
                 <div>
-                    <p class="text-sm font-medium text-slate-700">No dataset visualization available</p>
-                    <p class="mt-1 text-xs text-slate-500">Upload and map a CSV, Excel, or JSON dataset to visualize trends or numerical distributions.</p>
+                    <p class="text-sm font-medium" style="color: var(--text-primary);">No dataset visualization available</p>
+                    <p class="il-muted mt-1 text-xs">Upload and map a CSV, Excel, or JSON dataset to visualize trends or numerical distributions.</p>
                 </div>
             </div>
         {% endif %}
     </div>
 
-    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h3 class="text-base font-semibold text-slate-900">
+    <div class="il-card p-6">
+        <div class="flex items-start justify-between gap-3 mb-4">
+            <div class="min-w-0">
+                <h3 class="il-title text-base truncate">
                     {% if dashboard_charts and dashboard_charts.secondary_chart %}{{ dashboard_charts.secondary_chart.title }}{% else %}Segment &amp; Feature Breakdown{% endif %}
                 </h3>
                 {% if dashboard_charts and dashboard_charts.secondary_chart %}
-                    <p class="text-xs text-slate-500">{{ dashboard_charts.secondary_chart.subtitle }}</p>
+                    <p class="il-muted text-xs mt-0.5 truncate">{{ dashboard_charts.secondary_chart.subtitle }}</p>
                 {% endif %}
             </div>
-            <a href="{% url 'analytics:visualizations' %}" class="shrink-0 whitespace-nowrap text-xs font-medium text-indigo-600 hover:text-indigo-700">
+            <a href="{% url 'analytics:visualizations' %}" class="il-link shrink-0 whitespace-nowrap text-xs">
                 Custom Charts &rarr;
             </a>
         </div>
@@ -113,67 +144,100 @@
                 <canvas id="dashSecondaryChart"></canvas>
             </div>
         {% else %}
-            <div class="flex h-56 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center">
+            <div class="il-empty-inner flex h-56 items-center justify-center">
                 <div>
-                    <p class="text-sm font-medium text-slate-700">No categorical or feature summary yet</p>
-                    <p class="mt-1 text-xs text-slate-500">Group breakdowns and column summaries appear automatically after profiling.</p>
+                    <p class="text-sm font-medium" style="color: var(--text-primary);">No categorical or feature summary yet</p>
+                    <p class="il-muted mt-1 text-xs">Group breakdowns and column summaries appear automatically after profiling.</p>
                 </div>
             </div>
         {% endif %}
     </div>
 </section>
 
-<!-- Recent Experiments & Activity Row -->
-<section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+<!-- Recent Datasets, Experiments & Activity Row -->
+<section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div class="il-card p-6">
         <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base font-semibold text-slate-900">Recent Modeling &amp; Experiments</h3>
-            <a href="{% url 'forecasting:compare' %}" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">
-                Model Comparison
-            </a>
+            <h3 class="il-title text-base">Recent Datasets</h3>
+            <a href="{% url 'datasets:list' %}" class="il-link text-xs">View All</a>
         </div>
-        {% if recent_experiments %}
-            <ul class="divide-y divide-slate-100 text-sm">
-                {% for exp in recent_experiments %}
-                    <li class="py-3 flex items-center justify-between gap-3">
+        {% if user.sales_datasets.exists %}
+            <ul class="divide-y text-sm" style="border-color: var(--border-default);">
+                {% for ds in user.sales_datasets.all|slice:":5" %}
+                    <li class="py-2.5 flex items-center justify-between gap-2.5">
                         <div class="min-w-0">
-                            <a href="{% url 'forecasting:detail' exp.pk %}" class="font-medium text-slate-900 hover:text-indigo-600 truncate block">
-                                {{ exp.get_model_name_display }} — {{ exp.dataset.name }}
+                            <a href="{% url 'datasets:detail' ds.pk %}" class="font-medium truncate block hover:underline" style="color: var(--text-primary);">
+                                {{ ds.name }}
                             </a>
-                            <p class="text-xs text-slate-500">
-                                Target: {{ exp.target_metric }} ({{ exp.product_display }}) &bull; RMSE: {{ exp.rmse|floatformat:2|default:"—" }} &bull; MAE: {{ exp.mae|floatformat:2|default:"—" }}
+                            <p class="il-muted text-xs truncate">
+                                <span class="uppercase font-semibold">{{ ds.source_format }}</span> &bull; {{ ds.get_dataset_type_display }}
                             </p>
                         </div>
-                        <span class="shrink-0 text-xs text-slate-400">{{ exp.created_at|date:"M d, H:i" }}</span>
+                        {% if ds.has_cleaned_version %}
+                            <span class="il-badge il-badge-indigo shrink-0">Cleaned</span>
+                        {% elif ds.is_mapped %}
+                            <span class="il-badge il-badge-teal shrink-0">Profiled</span>
+                        {% else %}
+                            <span class="il-badge il-badge-amber shrink-0">Setup</span>
+                        {% endif %}
                     </li>
                 {% endfor %}
             </ul>
         {% else %}
-            <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center">
-                <p class="text-sm font-medium text-slate-700">No predictive models executed yet</p>
-                <p class="mt-1 text-xs text-slate-500">Run Forecasting or Experiment Lab protocols to compare MAE, RMSE, and MAPE here.</p>
+            <div class="il-empty-inner">
+                <p class="text-sm font-medium" style="color: var(--text-primary);">No datasets uploaded yet</p>
+                <p class="il-muted mt-1 text-xs">Upload a CSV, XLSX, XLS, or JSON file to get started.</p>
             </div>
         {% endif %}
     </div>
 
-    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+    <div class="il-card p-6">
         <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base font-semibold text-slate-900">Recent Activity</h3>
-            <span class="text-xs text-slate-500">Workspace audit log</span>
+            <h3 class="il-title text-base">Recent Experiments</h3>
+            <a href="{% url 'forecasting:compare' %}" class="il-link text-xs">Compare</a>
         </div>
-        {% if recent_activity %}
-            <ul class="divide-y divide-slate-100 text-sm">
-                {% for item in recent_activity %}
+        {% if recent_experiments %}
+            <ul class="divide-y text-sm" style="border-color: var(--border-default);">
+                {% for exp in recent_experiments %}
                     <li class="py-2.5 flex items-center justify-between gap-3">
-                        <span class="text-slate-700">{{ item.message }}</span>
-                        <span class="shrink-0 text-xs text-slate-400">{{ item.created_at|date:"M d, H:i" }}</span>
+                        <div class="min-w-0">
+                            <a href="{% url 'forecasting:detail' exp.pk %}" class="font-medium truncate block hover:underline" style="color: var(--text-primary);">
+                                {{ exp.get_model_name_display }} — {{ exp.dataset.name }}
+                            </a>
+                            <p class="il-muted text-xs truncate">
+                                {{ exp.target_metric }} ({{ exp.product_display }}) &bull; RMSE: {{ exp.rmse|floatformat:2|default:"—" }}
+                            </p>
+                        </div>
+                        <span class="il-muted shrink-0 text-xs">{{ exp.created_at|date:"M d, H:i" }}</span>
                     </li>
                 {% endfor %}
             </ul>
         {% else %}
-            <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center">
-                <p class="text-sm font-medium text-slate-700">No recent workspace activity</p>
-                <p class="mt-1 text-xs text-slate-500">Dataset uploads, cleaning logs, model evaluations, and report exports will appear here.</p>
+            <div class="il-empty-inner">
+                <p class="text-sm font-medium" style="color: var(--text-primary);">No models executed yet</p>
+                <p class="il-muted mt-1 text-xs">Run Forecasting or Experiment Lab protocols to compare metrics here.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="il-card p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="il-title text-base">Recent Activity</h3>
+            <span class="il-muted text-xs">Audit log</span>
+        </div>
+        {% if recent_activity %}
+            <ul class="divide-y text-sm" style="border-color: var(--border-default);">
+                {% for item in recent_activity %}
+                    <li class="py-2.5 flex items-center justify-between gap-3">
+                        <span class="text-xs leading-relaxed" style="color: var(--text-secondary);">{{ item.message }}</span>
+                        <span class="il-muted shrink-0 text-[11px] whitespace-nowrap">{{ item.created_at|date:"M d, H:i" }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="il-empty-inner">
+                <p class="text-sm font-medium" style="color: var(--text-primary);">No recent activity</p>
+                <p class="il-muted mt-1 text-xs">Uploads, cleaning logs, model evaluations, and exports appear here.</p>
             </div>
         {% endif %}
     </div>
@@ -184,23 +248,26 @@
 {{ dashboard_charts|json_script:"dash-charts-data" }}
 <script>
 const dashData = JSON.parse(document.getElementById('dash-charts-data').textContent);
-if (dashData && typeof Chart !== 'undefined') {
+if (dashData && window.InsightLabCharts) {
+    const pal = window.InsightLabCharts.getPalette();
     const p = dashData.primary_chart;
     const pCanvas = document.getElementById('dashPrimaryChart');
     if (p && pCanvas) {
-        new Chart(pCanvas, {
+        const isLine = p.type === 'line';
+        window.InsightLabCharts.create(pCanvas, {
             type: p.type,
             data: {
                 labels: p.labels,
                 datasets: [{
                     label: p.series_label,
                     data: p.values,
-                    borderColor: '#4f46e5',
-                    backgroundColor: p.type === 'line' ? 'rgba(79, 70, 229, 0.08)' : '#4f46e5',
-                    fill: p.type === 'line',
+                    ilRole: isLine ? 'primary-line' : 'primary-bar',
+                    borderColor: pal.indigo,
+                    backgroundColor: isLine ? pal.indigoSoft : pal.indigo,
+                    fill: isLine,
                     tension: 0.25,
                     pointRadius: 1.5,
-                    borderRadius: p.type === 'bar' ? 5 : 0
+                    borderRadius: isLine ? 0 : 6
                 }]
             },
             options: {
@@ -214,14 +281,15 @@ if (dashData && typeof Chart !== 'undefined') {
     const s = dashData.secondary_chart;
     const sCanvas = document.getElementById('dashSecondaryChart');
     if (s && sCanvas) {
-        new Chart(sCanvas, {
+        window.InsightLabCharts.create(sCanvas, {
             type: s.type,
             data: {
                 labels: s.labels,
                 datasets: [{
                     label: s.series_label,
                     data: s.values,
-                    backgroundColor: '#6366f1',
+                    ilRole: 'teal-bar',
+                    backgroundColor: pal.teal,
                     borderRadius: 6
                 }]
             },

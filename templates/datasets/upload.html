@@ -1,76 +1,91 @@
 {% extends 'base.html' %}
 
 {% block title %}Upload Dataset — InsightLab{% endblock %}
+{% block breadcrumb %}My Datasets / Upload{% endblock %}
 {% block page_heading %}Upload Dataset{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl">
-    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
-        <h2 class="text-base font-semibold text-slate-900">Upload Structured Dataset</h2>
-        <p class="mt-1 text-sm text-slate-600">
-            Supported formats: <strong>CSV (.csv)</strong>, <strong>Excel (.xlsx, .xls)</strong>, and <strong>JSON (.json)</strong> (up to 15 MB, minimum 2 columns and 1 data row). Multi-sheet workbooks and multi-array JSON files prompt you to choose which collection to import.
-        </p>
+    <div class="il-card p-6 sm:p-8">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <h2 class="il-title text-base">Upload Structured Dataset</h2>
+                <p class="il-subtitle mt-1 text-sm">
+                    Supported formats: <strong>CSV (.csv)</strong>, <strong>Excel (.xlsx, .xls)</strong>, and <strong>JSON (.json)</strong> (up to 15 MB, minimum 2 columns and 1 data row). Multi-sheet workbooks and multi-array JSON files prompt you to choose which collection to import.
+                </p>
+            </div>
+            <span class="il-badge il-badge-indigo shrink-0">Max 15 MB</span>
+        </div>
 
-        <div class="mt-4 grid grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs text-slate-600 sm:grid-cols-3">
-            <div><strong class="text-slate-800">CSV (.csv)</strong><br>Direct tabular text with UTF-8 / Latin-1 support</div>
-            <div><strong class="text-slate-800">Excel (.xlsx, .xls)</strong><br>Safe read-only ingestion with sheet selector &amp; cached values</div>
-            <div><strong class="text-slate-800">JSON (.json)</strong><br>Arrays of objects, wrapper keys, or nested objects flattened safely</div>
+        <div class="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-3 text-xs">
+            <div class="il-card-subtle p-3">
+                <strong style="color: var(--text-primary);">CSV (.csv)</strong>
+                <p class="il-muted mt-0.5">Direct tabular text with UTF-8 / Latin-1 fallback</p>
+            </div>
+            <div class="il-card-subtle p-3">
+                <strong style="color: var(--text-primary);">Excel (.xlsx, .xls)</strong>
+                <p class="il-muted mt-0.5">Read-only cached values &amp; worksheet selector (200k rows &times; 250 cols max)</p>
+            </div>
+            <div class="il-card-subtle p-3">
+                <strong style="color: var(--text-primary);">JSON (.json)</strong>
+                <p class="il-muted mt-0.5">Arrays or objects with dot-notation flattening &amp; path selector</p>
+            </div>
         </div>
 
         <form method="post" enctype="multipart/form-data" class="mt-6 space-y-5" novalidate>
             {% csrf_token %}
 
             {% if form.non_field_errors %}
-                <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div class="il-alert il-alert-danger">
                     {{ form.non_field_errors }}
                 </div>
             {% endif %}
 
             <div>
-                <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1.5">
+                <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
                     Dataset Name
                 </label>
                 {{ form.name }}
                 {% if form.name.errors %}
-                    <p class="mt-1 text-xs text-red-600">{{ form.name.errors.0 }}</p>
+                    <p class="mt-1 text-xs" style="color: var(--status-danger-text);">{{ form.name.errors.0 }}</p>
                 {% endif %}
             </div>
 
             <div>
-                <label for="{{ form.dataset_type.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1.5">
+                <label for="{{ form.dataset_type.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
                     {{ form.dataset_type.label }}
                 </label>
                 {{ form.dataset_type }}
             </div>
 
             <div>
-                <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1.5">
+                <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
                     Description (optional)
                 </label>
                 {{ form.description }}
                 {% if form.description.errors %}
-                    <p class="mt-1 text-xs text-red-600">{{ form.description.errors.0 }}</p>
+                    <p class="mt-1 text-xs" style="color: var(--status-danger-text);">{{ form.description.errors.0 }}</p>
                 {% endif %}
             </div>
 
             <div>
-                <label for="{{ form.original_file.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1.5">
+                <label for="{{ form.original_file.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
                     Dataset File (.csv, .xlsx, .xls, .json)
                 </label>
                 {{ form.original_file }}
-                <p class="mt-1 text-xs text-slate-500">Your original file is stored untouched; Excel and JSON files are normalized cleanly for analytics and forecasting.</p>
+                <p class="il-muted mt-1.5 text-xs">
+                    Your original file is preserved untouched; Excel and JSON files are normalized cleanly for analytics and forecasting.
+                </p>
                 {% if form.original_file.errors %}
-                    <p class="mt-1 text-xs text-red-600">{{ form.original_file.errors.0 }}</p>
+                    <p class="mt-1 text-xs" style="color: var(--status-danger-text);">{{ form.original_file.errors.0 }}</p>
                 {% endif %}
             </div>
 
-            <div class="flex items-center gap-3 pt-2">
-                <button type="submit"
-                        class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-xs hover:bg-indigo-700">
+            <div class="flex flex-wrap items-center gap-3 pt-2">
+                <button type="submit" class="il-btn il-btn-primary">
                     Upload &amp; Inspect Schema
                 </button>
-                <a href="{% url 'datasets:list' %}"
-                   class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                <a href="{% url 'datasets:list' %}" class="il-btn il-btn-secondary">
                     Cancel
                 </a>
             </div>

@@ -1,25 +1,24 @@
 {% extends 'base.html' %}
 
 {% block title %}Visualizations — InsightLab{% endblock %}
+{% block breadcrumb %}Analytics / Visualizations{% endblock %}
 {% block page_heading %}Interactive Visualization Studio{% endblock %}
 
 {% block content %}
 {% if not datasets %}
-<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
-    <h3 class="text-base font-semibold text-slate-900">No mapped datasets available</h3>
-    <p class="mt-1 text-sm text-slate-600">Upload and configure a CSV, Excel, or JSON dataset to build custom charts.</p>
-    <a href="{% url 'datasets:upload' %}"
-       class="mt-5 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+<div class="il-empty">
+    <h3 class="il-title text-base">No mapped datasets available</h3>
+    <p class="il-subtitle mt-1 text-sm">Upload and configure a CSV, Excel, or JSON dataset to build custom charts.</p>
+    <a href="{% url 'datasets:upload' %}" class="il-btn il-btn-primary mt-5">
         Upload Dataset
     </a>
 </div>
 {% else %}
-<form method="get" class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-6 items-end">
+<form method="get" class="il-card mb-6 p-5">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6 items-end">
         <div>
-            <label for="id_dataset" class="block text-xs font-medium text-slate-600 mb-1">Dataset</label>
-            <select id="id_dataset" name="dataset"
-                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+            <label for="id_dataset" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Dataset</label>
+            <select id="id_dataset" name="dataset" class="block w-full">
                 {% for ds in datasets %}
                     <option value="{{ ds.pk }}" {% if selected_dataset.pk == ds.pk %}selected{% endif %}>{{ ds.name }}</option>
                 {% endfor %}
@@ -27,9 +26,8 @@
         </div>
 
         <div>
-            <label for="id_chart_type" class="block text-xs font-medium text-slate-600 mb-1">Chart Type</label>
-            <select id="id_chart_type" name="chart_type"
-                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+            <label for="id_chart_type" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Chart Type</label>
+            <select id="id_chart_type" name="chart_type" class="block w-full">
                 <option value="line" {% if chart_type == 'line' %}selected{% endif %}>Line Trend</option>
                 <option value="bar" {% if chart_type == 'bar' %}selected{% endif %}>Bar Comparison</option>
                 <option value="histogram" {% if chart_type == 'histogram' %}selected{% endif %}>Distribution Histogram</option>
@@ -38,9 +36,8 @@
         </div>
 
         <div>
-            <label for="id_x_col" class="block text-xs font-medium text-slate-600 mb-1">X-Axis / Group</label>
-            <select id="id_x_col" name="x_col"
-                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+            <label for="id_x_col" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">X-Axis / Group</label>
+            <select id="id_x_col" name="x_col" class="block w-full">
                 {% for col in all_cols %}
                     <option value="{{ col }}" {% if x_col == col %}selected{% endif %}>{{ col }}</option>
                 {% endfor %}
@@ -48,9 +45,8 @@
         </div>
 
         <div>
-            <label for="id_y_col" class="block text-xs font-medium text-slate-600 mb-1">Y-Axis (Numerical)</label>
-            <select id="id_y_col" name="y_col"
-                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+            <label for="id_y_col" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Y-Axis (Numerical)</label>
+            <select id="id_y_col" name="y_col" class="block w-full">
                 {% for col in numeric_cols %}
                     <option value="{{ col }}" {% if y_col == col %}selected{% endif %}>{{ col }}</option>
                 {% endfor %}
@@ -58,9 +54,8 @@
         </div>
 
         <div>
-            <label for="id_agg" class="block text-xs font-medium text-slate-600 mb-1">Aggregation</label>
-            <select id="id_agg" name="agg"
-                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+            <label for="id_agg" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Aggregation</label>
+            <select id="id_agg" name="agg" class="block w-full">
                 <option value="sum" {% if agg_func == 'sum' %}selected{% endif %}>Sum</option>
                 <option value="mean" {% if agg_func == 'mean' %}selected{% endif %}>Average (Mean)</option>
                 <option value="count" {% if agg_func == 'count' %}selected{% endif %}>Record Count</option>
@@ -68,20 +63,22 @@
         </div>
 
         <div>
-            <button type="submit"
-                    class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+            <button type="submit" class="il-btn il-btn-primary w-full">
                 Render Chart
             </button>
         </div>
     </div>
 </form>
 
-<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+<div class="il-card p-6">
     {% if viz_data and viz_data.has_chart %}
-        <h3 class="text-base font-semibold text-slate-900 mb-4">{{ viz_data.title }}</h3>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h3 class="il-title text-base">{{ viz_data.title }}</h3>
+            <span class="il-badge il-badge-teal uppercase text-[10px]">{{ viz_data.chart_type }}</span>
+        </div>
         <div class="h-80"><canvas id="customVizChart"></canvas></div>
     {% else %}
-        <div class="flex h-64 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-600">
+        <div class="il-empty-inner flex h-64 items-center justify-center text-sm" style="color: var(--text-secondary);">
             {{ viz_data.message|default:"Select columns above and click Render Chart." }}
         </div>
     {% endif %}
@@ -93,16 +90,18 @@
 {{ viz_data|json_script:"custom-viz-data" }}
 <script>
 const viz = JSON.parse(document.getElementById('custom-viz-data').textContent);
-if (viz && viz.has_chart && typeof Chart !== 'undefined') {
+if (viz && viz.has_chart && window.InsightLabCharts) {
+    const pal = window.InsightLabCharts.getPalette();
     const canvas = document.getElementById('customVizChart');
     if (viz.chart_type === 'scatter') {
-        new Chart(canvas, {
+        window.InsightLabCharts.create(canvas, {
             type: 'scatter',
             data: {
                 datasets: [{
                     label: viz.title,
                     data: viz.points,
-                    backgroundColor: '#4f46e5'
+                    ilRole: 'primary-bar',
+                    backgroundColor: pal.indigo
                 }]
             },
             options: {
@@ -115,18 +114,20 @@ if (viz && viz.has_chart && typeof Chart !== 'undefined') {
             }
         });
     } else {
-        new Chart(canvas, {
+        const isLine = viz.chart_type === 'line';
+        window.InsightLabCharts.create(canvas, {
             type: viz.chart_type,
             data: {
                 labels: viz.labels,
                 datasets: [{
                     label: viz.y_label,
                     data: viz.values,
-                    borderColor: '#4f46e5',
-                    backgroundColor: viz.chart_type === 'line' ? 'rgba(79, 70, 229, 0.1)' : '#6366f1',
-                    fill: viz.chart_type === 'line',
+                    ilRole: isLine ? 'primary-line' : 'primary-bar',
+                    borderColor: pal.indigo,
+                    backgroundColor: isLine ? pal.indigoSoft : pal.indigo,
+                    fill: isLine,
                     tension: 0.25,
-                    borderRadius: viz.chart_type === 'bar' ? 5 : 0
+                    borderRadius: isLine ? 0 : 6
                 }]
             },
             options: {

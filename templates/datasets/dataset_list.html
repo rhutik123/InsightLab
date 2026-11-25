@@ -1,138 +1,137 @@
 {% extends 'base.html' %}
 
 {% block title %}My Datasets — InsightLab{% endblock %}
+{% block breadcrumb %}Workspace / My Datasets{% endblock %}
 {% block page_heading %}My Datasets{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'datasets:upload' %}" class="il-btn il-btn-primary il-btn-sm">
+    + Upload Dataset
+</a>
+{% endblock %}
 
 {% block content %}
 <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
-        <h2 class="text-base font-semibold text-slate-900">Uploaded Datasets</h2>
-        <p class="text-sm text-slate-600">Upload CSV (.csv), Excel (.xlsx, .xls), or JSON (.json) datasets (sales, web traffic, expenses, inventory, or custom metrics) for profiling and analysis.</p>
+        <h2 class="il-title text-base">Uploaded Datasets</h2>
+        <p class="il-subtitle text-sm mt-0.5">
+            Upload CSV (.csv), Excel (.xlsx, .xls), or JSON (.json) datasets (sales, web traffic, expenses, inventory, or custom metrics) for profiling and analysis.
+        </p>
     </div>
     <div class="flex flex-wrap gap-2">
-        <a href="{% url 'datasets:sample_csv' %}?type=sales"
-           class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">
+        <a href="{% url 'datasets:sample_csv' %}?type=sales" class="il-btn il-btn-secondary il-btn-sm">
             Sample Sales CSV
         </a>
-        <a href="{% url 'datasets:sample_csv' %}?type=traffic"
-           class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">
+        <a href="{% url 'datasets:sample_csv' %}?type=traffic" class="il-btn il-btn-secondary il-btn-sm">
             Sample Traffic CSV
         </a>
-        <a href="{% url 'datasets:sample_csv' %}?type=expenses"
-           class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">
+        <a href="{% url 'datasets:sample_csv' %}?type=expenses" class="il-btn il-btn-secondary il-btn-sm">
             Sample Expenses CSV
         </a>
-        <a href="{% url 'datasets:upload' %}"
-           class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-indigo-700">
+        <a href="{% url 'datasets:upload' %}" class="il-btn il-btn-primary il-btn-sm">
             + Upload Dataset
         </a>
     </div>
 </div>
 
 {% if datasets %}
-<div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+<div class="il-card overflow-hidden">
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <table class="il-table">
+            <thead>
                 <tr>
-                    <th class="px-3 py-3 sm:px-4">Dataset</th>
-                    <th class="hidden md:table-cell px-4 py-3">Domain</th>
-                    <th class="hidden sm:table-cell px-4 py-3">Shape &amp; Schema</th>
-                    <th class="hidden lg:table-cell px-4 py-3">Date Range</th>
-                    <th class="px-3 py-3 sm:px-4">Status</th>
-                    <th class="px-3 py-3 sm:px-4 text-right">Actions</th>
+                    <th>Dataset</th>
+                    <th class="hidden md:table-cell">Domain</th>
+                    <th class="hidden sm:table-cell">Shape &amp; Schema</th>
+                    <th class="hidden lg:table-cell">Date Range</th>
+                    <th>Status</th>
+                    <th class="text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody>
                 {% for ds in datasets %}
                 {% with prof=ds.active_profile %}
-                <tr class="hover:bg-slate-50/70">
-                    <td class="px-3 py-3 sm:px-4">
-                        <a href="{% url 'datasets:detail' ds.pk %}" class="font-semibold text-slate-900 hover:text-indigo-600">
+                <tr>
+                    <td>
+                        <a href="{% url 'datasets:detail' ds.pk %}" class="font-semibold hover:underline block" style="color: var(--text-primary);">
                             {{ ds.name }}
                         </a>
-                        <div class="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
-                            <span class="inline-flex rounded bg-slate-100 px-1.5 py-0.5 font-semibold uppercase text-slate-700">{{ ds.source_format }}</span>
-                            {% if ds.original_filename %}<span>{{ ds.original_filename }}</span>{% endif %}
+                        <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]" style="color: var(--text-muted);">
+                            <span class="il-badge il-badge-muted uppercase py-0">{{ ds.source_format }}</span>
+                            {% if ds.original_filename %}<span class="truncate max-w-[14rem]">{{ ds.original_filename }}</span>{% endif %}
                             {% if ds.selected_sheet %}<span>&bull; Sheet: {{ ds.selected_sheet }}</span>{% endif %}
                             {% if ds.selected_json_path %}<span>&bull; Path: {{ ds.selected_json_path }}</span>{% endif %}
                         </div>
                         {% if ds.description %}
-                            <p class="mt-0.5 text-xs text-slate-500 line-clamp-1">{{ ds.description }}</p>
+                            <p class="mt-1 text-xs line-clamp-1" style="color: var(--text-secondary);">{{ ds.description }}</p>
                         {% endif %}
                     </td>
-                    <td class="hidden md:table-cell px-4 py-3 text-xs text-slate-600">
-                        <span class="inline-flex rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-700">
+                    <td class="hidden md:table-cell">
+                        <span class="il-badge il-badge-muted">
                             {{ ds.get_dataset_type_display }}
                         </span>
                     </td>
-                    <td class="hidden sm:table-cell px-4 py-3 text-slate-600 text-xs">
+                    <td class="hidden sm:table-cell text-xs">
                         {% if ds.is_mapped %}
-                            <span>{{ prof.row_count|default:0 }} rows &times; {{ prof.col_count|default:0 }} cols</span>
+                            <span style="color: var(--text-primary); font-weight: 500;">{{ prof.row_count|default:0 }} rows &times; {{ prof.col_count|default:0 }} cols</span>
                             {% if prof.primary_target_column %}
-                                <span class="block text-slate-400">Target: {{ prof.primary_target_column }}</span>
+                                <span class="il-muted block">Target: {{ prof.primary_target_column }}</span>
                             {% endif %}
                         {% else %}
-                            <span class="text-amber-700">Pending schema setup</span>
+                            <span style="color: var(--status-warning-text);">Pending schema setup</span>
                         {% endif %}
                     </td>
-                    <td class="hidden lg:table-cell px-4 py-3 text-xs text-slate-600">
+                    <td class="hidden lg:table-cell text-xs">
                         {% if ds.is_mapped and prof.date_min %}
                             {{ prof.date_min }} to {{ prof.date_max }}
                         {% elif ds.is_mapped %}
-                            <span class="text-slate-400">Non-time-series</span>
+                            <span class="il-muted">Non-time-series</span>
                         {% else %}
-                            —
+                            <span class="il-muted">&mdash;</span>
                         {% endif %}
                     </td>
-                    <td class="px-3 py-3 sm:px-4">
+                    <td>
                         <div class="flex flex-wrap gap-1">
                             {% if ds.needs_structure_selection %}
-                                <span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Needs Selection</span>
+                                <span class="il-badge il-badge-amber">Needs Selection</span>
                             {% elif not ds.is_mapped %}
-                                <span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Needs Mapping</span>
+                                <span class="il-badge il-badge-amber">Needs Mapping</span>
                             {% else %}
-                                <span class="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">Profiled</span>
+                                <span class="il-badge il-badge-teal">Profiled</span>
                             {% endif %}
                             {% if ds.has_cleaned_version %}
-                                <span class="inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700">Cleaned</span>
+                                <span class="il-badge il-badge-indigo">Cleaned</span>
                             {% endif %}
                         </div>
                     </td>
-                    <td class="px-3 py-3 sm:px-4 text-right">
+                    <td class="text-right">
                         <div class="flex flex-wrap items-center justify-end gap-1.5">
                             {% if ds.needs_structure_selection %}
                                 {% if ds.source_format == 'json' %}
-                                    <a href="{% url 'datasets:select_json' ds.pk %}"
-                                       class="rounded-md bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700">
+                                    <a href="{% url 'datasets:select_json' ds.pk %}" class="il-btn il-btn-primary il-btn-sm">
                                         Select JSON Path
                                     </a>
                                 {% else %}
-                                    <a href="{% url 'datasets:select_sheet' ds.pk %}"
-                                       class="rounded-md bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700">
+                                    <a href="{% url 'datasets:select_sheet' ds.pk %}" class="il-btn il-btn-primary il-btn-sm">
                                         Select Sheet
                                     </a>
                                 {% endif %}
                             {% elif ds.is_mapped %}
-                                <a href="{% url 'datasets:detail' ds.pk %}"
-                                   class="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">
+                                <a href="{% url 'datasets:detail' ds.pk %}" class="il-btn il-btn-secondary il-btn-sm">
                                     Profile
                                 </a>
-                                <a href="{% url 'datasets:explorer' %}?dataset={{ ds.pk }}"
-                                   class="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">
+                                <a href="{% url 'datasets:explorer' %}?dataset={{ ds.pk }}" class="il-btn il-btn-secondary il-btn-sm">
                                     Explore
                                 </a>
                             {% else %}
-                                <a href="{% url 'datasets:map_columns' ds.pk %}"
-                                   class="rounded-md bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700">
+                                <a href="{% url 'datasets:map_columns' ds.pk %}" class="il-btn il-btn-primary il-btn-sm">
                                     Map Schema
                                 </a>
                             {% endif %}
                             <form method="post" action="{% url 'datasets:delete' ds.pk %}"
-                                  onsubmit="return confirm('Delete dataset {{ ds.name|escapejs }}?');">
+                                  data-confirm-message="Delete dataset {{ ds.name|escapejs }}?">
                                 {% csrf_token %}
-                                <button type="submit"
-                                        class="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50">
+                                <button type="submit" class="il-btn il-btn-danger il-btn-sm">
                                     Delete
                                 </button>
                             </form>
@@ -146,26 +145,22 @@
     </div>
 </div>
 {% else %}
-<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
-    <h3 class="text-base font-semibold text-slate-900">No datasets uploaded yet</h3>
-    <p class="mt-1 text-sm text-slate-600 max-w-lg mx-auto">
+<div class="il-empty">
+    <h3 class="il-title text-base">No datasets uploaded yet</h3>
+    <p class="il-subtitle mt-1.5 text-sm max-w-lg mx-auto">
         Upload any structured CSV (.csv), Excel (.xlsx, .xls), or JSON (.json) dataset (at least 2 columns and 1 data row), or download one of our synthetic demonstration CSVs below to explore InsightLab.
     </p>
     <div class="mt-6 flex flex-wrap justify-center gap-2.5">
-        <a href="{% url 'datasets:upload' %}"
-           class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+        <a href="{% url 'datasets:upload' %}" class="il-btn il-btn-primary">
             Upload your first Dataset
         </a>
-        <a href="{% url 'datasets:sample_csv' %}?type=traffic"
-           class="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+        <a href="{% url 'datasets:sample_csv' %}?type=traffic" class="il-btn il-btn-secondary il-btn-sm">
             Sample Web Traffic CSV
         </a>
-        <a href="{% url 'datasets:sample_csv' %}?type=expenses"
-           class="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+        <a href="{% url 'datasets:sample_csv' %}?type=expenses" class="il-btn il-btn-secondary il-btn-sm">
             Sample Expenses CSV
         </a>
-        <a href="{% url 'datasets:sample_csv' %}?type=sales"
-           class="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+        <a href="{% url 'datasets:sample_csv' %}?type=sales" class="il-btn il-btn-secondary il-btn-sm">
             Sample Sales CSV
         </a>
     </div>

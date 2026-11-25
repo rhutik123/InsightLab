@@ -1,13 +1,14 @@
 {% extends 'base.html' %}
 
 {% block title %}Reports — InsightLab{% endblock %}
+{% block breadcrumb %}Management / Reports{% endblock %}
 {% block page_heading %}Analytical &amp; Predictive PDF Reports{% endblock %}
 
 {% block content %}
 <div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
-    <div class="xl:col-span-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-        <h2 class="text-base font-semibold text-slate-900">Generate InsightLab PDF Report</h2>
-        <p class="mt-1 text-xs text-slate-600">
+    <div class="xl:col-span-4 il-card p-6">
+        <h2 class="il-title text-base">Generate InsightLab PDF Report</h2>
+        <p class="il-subtitle mt-1 text-xs">
             Compiles dataset overview, numerical column statistics, cleaning logs, EDA charts, anomaly observations, model comparisons, and decision-support insights from your real workspace data.
         </p>
 
@@ -15,57 +16,54 @@
         <form method="post" class="mt-5 space-y-4">
             {% csrf_token %}
             <div>
-                <label for="id_report_dataset" class="block text-xs font-medium text-slate-700 mb-1.5">
+                <label for="id_report_dataset" class="block text-xs font-medium mb-1.5" style="color: var(--text-secondary);">
                     Select Mapped Dataset
                 </label>
-                <select id="id_report_dataset" name="dataset_id"
-                        class="block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900">
+                <select id="id_report_dataset" name="dataset_id" class="block w-full">
                     {% for ds in datasets %}
                         <option value="{{ ds.pk }}">{{ ds.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <button type="submit"
-                    class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-xs hover:bg-indigo-700">
+            <button type="submit" class="il-btn il-btn-primary w-full py-2.5">
                 Generate PDF Report
             </button>
         </form>
         {% else %}
-        <div class="mt-5 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+        <div class="il-empty-inner mt-5 text-xs" style="color: var(--text-secondary);">
             Upload and configure a CSV, Excel, or JSON dataset first to generate an InsightLab PDF report.
         </div>
         {% endif %}
     </div>
 
-    <div class="xl:col-span-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-        <h3 class="text-base font-semibold text-slate-900 mb-3">Saved Reports</h3>
+    <div class="xl:col-span-8 il-card p-6">
+        <h3 class="il-title text-base mb-3">Saved Reports</h3>
         {% if reports %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-xs">
-                <thead class="bg-slate-50 text-left text-[11px] font-semibold uppercase text-slate-500">
+        <div class="il-table-wrap">
+            <table class="il-table">
+                <thead>
                     <tr>
-                        <th class="px-3 py-2.5">Report Title</th>
-                        <th class="px-3 py-2.5">Dataset</th>
-                        <th class="px-3 py-2.5 whitespace-nowrap">Generated</th>
-                        <th class="px-3 py-2.5 text-right whitespace-nowrap">Actions</th>
+                        <th>Report Title</th>
+                        <th>Dataset</th>
+                        <th class="whitespace-nowrap">Generated</th>
+                        <th class="text-right whitespace-nowrap">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
+                <tbody>
                     {% for r in reports %}
                     <tr>
-                        <td class="px-3 py-2.5 font-medium text-slate-900">{{ r.title }}</td>
-                        <td class="px-3 py-2.5 text-slate-600">{{ r.dataset.name }}</td>
-                        <td class="px-3 py-2.5 text-slate-500 whitespace-nowrap">{{ r.created_at|date:"M d, Y H:i" }}</td>
-                        <td class="px-3 py-2.5 text-right whitespace-nowrap">
+                        <td class="font-medium" style="color: var(--text-primary);">{{ r.title }}</td>
+                        <td>{{ r.dataset.name }}</td>
+                        <td class="whitespace-nowrap il-muted">{{ r.created_at|date:"M d, Y H:i" }}</td>
+                        <td class="text-right whitespace-nowrap">
                             <div class="inline-flex items-center gap-2 shrink-0">
-                                <a href="{% url 'reports:download' r.pk %}"
-                                   class="rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100">
+                                <a href="{% url 'reports:download' r.pk %}" class="il-btn il-btn-soft-indigo il-btn-sm">
                                     Download PDF
                                 </a>
-                                <form method="post" action="{% url 'reports:delete' r.pk %}">
+                                <form method="post" action="{% url 'reports:delete' r.pk %}"
+                                      data-confirm-message="Delete saved report {{ r.title|escapejs }}?">
                                     {% csrf_token %}
-                                    <button type="submit"
-                                            class="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50">
+                                    <button type="submit" class="il-btn il-btn-danger il-btn-sm">
                                         Delete
                                     </button>
                                 </form>
@@ -77,9 +75,9 @@
             </table>
         </div>
         {% else %}
-        <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center">
-            <p class="text-sm font-medium text-slate-700">No PDF reports generated yet</p>
-            <p class="mt-1 text-xs text-slate-500">Select a dataset on the left and click Generate PDF Report.</p>
+        <div class="il-empty-inner">
+            <p class="text-sm font-medium" style="color: var(--text-primary);">No PDF reports generated yet</p>
+            <p class="il-muted mt-1 text-xs">Select a dataset on the left and click Generate PDF Report.</p>
         </div>
         {% endif %}
     </div>

@@ -1,24 +1,23 @@
 {% extends 'base.html' %}
 
 {% block title %}Model Comparison — InsightLab{% endblock %}
+{% block breadcrumb %}Intelligence / Model Comparison{% endblock %}
 {% block page_heading %}Model Performance Comparison{% endblock %}
 
 {% block content %}
 <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
-        <h2 class="text-base font-semibold text-slate-900">Comparative Evaluation Across Saved Runs</h2>
-        <p class="text-sm text-slate-600">Compare MAE, RMSE, MAPE, and R&sup2; evaluated on held-out chronological test splits.</p>
+        <h2 class="il-title text-base">Comparative Evaluation Across Saved Runs</h2>
+        <p class="il-subtitle text-sm mt-0.5">Compare MAE, RMSE, MAPE, and R&sup2; evaluated on held-out chronological test splits.</p>
     </div>
     <form method="get" class="flex items-center gap-2">
-        <select name="dataset"
-                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+        <select name="dataset" class="min-w-[12rem]">
             <option value="">All Datasets</option>
             {% for ds in datasets %}
                 <option value="{{ ds.pk }}" {% if selected_dataset and selected_dataset.pk == ds.pk %}selected{% endif %}>{{ ds.name }}</option>
             {% endfor %}
         </select>
-        <button type="submit"
-                class="rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+        <button type="submit" class="il-btn il-btn-primary">
             Filter
         </button>
     </form>
@@ -26,55 +25,55 @@
 
 {% if runs %}
 {% if best_overall %}
-<div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
-    <p class="text-xs font-semibold uppercase tracking-wide text-emerald-800">Lowest Held-Out Test RMSE Observed</p>
-    <p class="mt-1 text-base font-semibold text-slate-900">
+<div class="il-alert il-alert-success mb-6 p-5">
+    <p class="text-xs font-semibold uppercase tracking-wide">Lowest Held-Out Test RMSE Observed</p>
+    <p class="mt-1 text-base font-semibold" style="color: var(--text-primary);">
         {{ best_overall.get_model_name_display }} on {{ best_overall.dataset.name }} ({{ best_overall.target_metric }})
         &mdash; RMSE: {{ best_overall.rmse|floatformat:2 }}, MAE: {{ best_overall.mae|floatformat:2 }}
     </p>
-    <p class="mt-1 text-xs text-slate-600">
+    <p class="il-subtitle mt-1 text-xs">
         Note: Error comparisons are only directly comparable across models run on the same dataset, target metric, and test period.
     </p>
 </div>
 {% endif %}
 
 {% if chart_data %}
-<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs mb-6">
-    <h3 class="text-base font-semibold text-slate-900 mb-3">RMSE &amp; MAE Comparison (Latest 12 Evaluated Runs)</h3>
+<div class="il-card p-6 mb-6">
+    <h3 class="il-title text-base mb-3">RMSE &amp; MAE Comparison (Latest 12 Evaluated Runs)</h3>
     <div class="h-72"><canvas id="compareAllChart"></canvas></div>
 </div>
 {% endif %}
 
-<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-    <h3 class="text-base font-semibold text-slate-900 mb-3">Evaluation Ledger</h3>
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200 text-xs">
-            <thead class="bg-slate-50 text-left font-semibold text-slate-600">
+<div class="il-card p-6">
+    <h3 class="il-title text-base mb-3">Evaluation Ledger</h3>
+    <div class="il-table-wrap">
+        <table class="il-table">
+            <thead>
                 <tr>
-                    <th class="px-3 py-2.5">Dataset</th>
-                    <th class="px-3 py-2.5">Model</th>
-                    <th class="px-3 py-2.5">Target &amp; Scope</th>
-                    <th class="px-3 py-2.5">Train / Test</th>
-                    <th class="px-3 py-2.5">MAE</th>
-                    <th class="px-3 py-2.5">RMSE</th>
-                    <th class="px-3 py-2.5">MAPE (%)</th>
-                    <th class="px-3 py-2.5">R&sup2;</th>
-                    <th class="px-3 py-2.5 text-right">Details</th>
+                    <th>Dataset</th>
+                    <th>Model</th>
+                    <th>Target &amp; Scope</th>
+                    <th>Train / Test</th>
+                    <th>MAE</th>
+                    <th>RMSE</th>
+                    <th>MAPE (%)</th>
+                    <th>R&sup2;</th>
+                    <th class="text-right">Details</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody>
                 {% for r in runs %}
                 <tr>
-                    <td class="px-3 py-2.5 font-medium text-slate-900">{{ r.dataset.name }}</td>
-                    <td class="px-3 py-2.5 text-slate-700">{{ r.get_model_name_display }}</td>
-                    <td class="px-3 py-2.5 text-slate-600">{{ r.target_metric }} ({{ r.product_display }})</td>
-                    <td class="px-3 py-2.5 text-slate-500">{{ r.train_rows }} / {{ r.test_rows }}</td>
-                    <td class="px-3 py-2.5">{{ r.mae|floatformat:2|default:"—" }}</td>
-                    <td class="px-3 py-2.5 font-semibold text-indigo-700">{{ r.rmse|floatformat:2|default:"—" }}</td>
-                    <td class="px-3 py-2.5">{{ r.mape|floatformat:2|default:"—" }}</td>
-                    <td class="px-3 py-2.5">{{ r.r2|floatformat:3|default:"—" }}</td>
-                    <td class="px-3 py-2.5 text-right">
-                        <a href="{% url 'forecasting:detail' r.pk %}" class="text-indigo-600 hover:text-indigo-700 font-medium">View</a>
+                    <td class="font-medium" style="color: var(--text-primary);">{{ r.dataset.name }}</td>
+                    <td>{{ r.get_model_name_display }}</td>
+                    <td>{{ r.target_metric }} ({{ r.product_display }})</td>
+                    <td class="il-muted">{{ r.train_rows }} / {{ r.test_rows }}</td>
+                    <td>{{ r.mae|floatformat:2|default:"—" }}</td>
+                    <td class="font-semibold" style="color: var(--accent-primary-text);">{{ r.rmse|floatformat:2|default:"—" }}</td>
+                    <td>{{ r.mape|floatformat:2|default:"—" }}</td>
+                    <td>{{ r.r2|floatformat:3|default:"—" }}</td>
+                    <td class="text-right">
+                        <a href="{% url 'forecasting:detail' r.pk %}" class="il-link">View</a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -83,11 +82,10 @@
     </div>
 </div>
 {% else %}
-<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
-    <h3 class="text-base font-semibold text-slate-900">No model evaluations recorded yet</h3>
-    <p class="mt-1 text-sm text-slate-600">Run forecasting models in Forecasting or Experiment Lab to compare performance metrics here.</p>
-    <a href="{% url 'forecasting:home' %}"
-       class="mt-5 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+<div class="il-empty">
+    <h3 class="il-title text-base">No model evaluations recorded yet</h3>
+    <p class="il-subtitle mt-1 text-sm">Run forecasting models in Forecasting or Experiment Lab to compare performance metrics here.</p>
+    <a href="{% url 'forecasting:home' %}" class="il-btn il-btn-primary mt-5">
         Go to Forecasting
     </a>
 </div>
@@ -98,14 +96,15 @@
 {{ chart_data|json_script:"compare-chart-data" }}
 <script>
 const cData = JSON.parse(document.getElementById('compare-chart-data').textContent);
-if (cData && typeof Chart !== 'undefined') {
-    new Chart(document.getElementById('compareAllChart'), {
+if (cData && window.InsightLabCharts) {
+    const pal = window.InsightLabCharts.getPalette();
+    window.InsightLabCharts.create(document.getElementById('compareAllChart'), {
         type: 'bar',
         data: {
             labels: cData.labels,
             datasets: [
-                { label: 'Test RMSE', data: cData.rmse, backgroundColor: '#4f46e5', borderRadius: 5 },
-                { label: 'Test MAE', data: cData.mae, backgroundColor: '#94a3b8', borderRadius: 5 }
+                { label: 'Test RMSE', data: cData.rmse, ilRole: 'primary-bar', backgroundColor: pal.indigo, borderRadius: 5 },
+                { label: 'Test MAE', data: cData.mae, ilRole: 'muted-bar', backgroundColor: pal.mutedBar, borderRadius: 5 }
             ]
         },
         options: { responsive: true, maintainAspectRatio: false }

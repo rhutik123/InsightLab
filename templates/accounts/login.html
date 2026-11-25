@@ -4,21 +4,17 @@
 
 {% block auth_content %}
 <div class="sm:mx-auto sm:w-full sm:max-w-md">
-    <div class="flex justify-center">
-        <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold text-base shadow-sm">
-            IL
-        </span>
+    <div class="text-center">
+        <span class="il-badge il-badge-indigo mb-3">Explore. Analyse. Predict.</span>
+        <h2 class="text-2xl font-semibold tracking-tight" style="color: var(--text-primary);">
+            Sign in to InsightLab
+        </h2>
+        <p class="mt-1.5 text-sm" style="color: var(--text-secondary);">
+            Intelligent Data Analytics &amp; Predictive Intelligence Platform
+        </p>
     </div>
-    <h2 class="mt-4 text-center text-2xl font-semibold tracking-tight text-slate-900">
-        Sign in to InsightLab
-    </h2>
-    <p class="mt-1 text-center text-sm text-slate-600">
-        Intelligent Data Analytics &amp; Predictive Intelligence Platform
-    </p>
-</div>
 
-<div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-    <div class="rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-xs sm:px-8">
+    <div class="il-card mt-7 px-6 py-8 sm:px-8">
         <form method="post" class="space-y-5" novalidate>
             {% csrf_token %}
             {% if next %}
@@ -26,7 +22,7 @@
             {% endif %}
 
             {% if form.non_field_errors %}
-                <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div class="il-alert il-alert-danger">
                     {% for error in form.non_field_errors %}
                         <p>{{ error }}</p>
                     {% endfor %}
@@ -34,34 +30,33 @@
             {% endif %}
 
             <div>
-                <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1.5">
+                <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
                     Username
                 </label>
                 {{ form.username }}
                 {% if form.username.errors %}
-                    <p class="mt-1 text-xs text-red-600">{{ form.username.errors.0 }}</p>
+                    <p class="mt-1 text-xs" style="color: var(--status-danger-text);">{{ form.username.errors.0 }}</p>
                 {% endif %}
             </div>
 
             <div>
-                <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1.5">
+                <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">
                     Password
                 </label>
                 {{ form.password }}
                 {% if form.password.errors %}
-                    <p class="mt-1 text-xs text-red-600">{{ form.password.errors.0 }}</p>
+                    <p class="mt-1 text-xs" style="color: var(--status-danger-text);">{{ form.password.errors.0 }}</p>
                 {% endif %}
             </div>
 
-            <button type="submit"
-                    class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-xs hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
+            <button type="submit" class="il-btn il-btn-primary w-full py-2.5">
                 Sign in
             </button>
         </form>
 
-        <p class="mt-6 text-center text-sm text-slate-600">
+        <p class="mt-6 text-center text-sm" style="color: var(--text-secondary);">
             Don&apos;t have an account?
-            <a href="{% url 'accounts:register' %}" class="font-medium text-indigo-600 hover:text-indigo-700">
+            <a href="{% url 'accounts:register' %}" class="il-link">
                 Create one
             </a>
         </p>
