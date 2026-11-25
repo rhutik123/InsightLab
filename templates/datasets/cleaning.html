@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}Data Cleaning — InsightLab{% endblock %}
+{% block page_heading %}Data Cleaning{% endblock %}
+
+{% block content %}
+{% if not has_datasets %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
+    <h3 class="text-base font-semibold text-slate-900">No mapped datasets available</h3>
+    <p class="mt-1 text-sm text-slate-600">Upload and configure a CSV dataset before running data cleaning.</p>
+    <a href="{% url 'datasets:upload' %}"
+       class="mt-5 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+        Upload CSV Dataset
+    </a>
+</div>
+{% else %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
+    <!-- Cleaning Options Form -->
+    <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h2 class="text-base font-semibold text-slate-900">Cleaning Pipeline Options</h2>
+        <p class="mt-1 text-xs text-slate-600">
+            Preview changes before applying. Your original CSV is always preserved untouched, and cleaning saves a separate cleaned file across all columns.
+        </p>
+
+        <form method="post" class="mt-5 space-y-4">
+            {% csrf_token %}
+
+            <div>
+                <label for="{{ form.dataset.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1.5">
+                    {{ form.dataset.label }}
+                </label>
+                {{ form.dataset }}
+            </div>
+
+            <div class="space-y-2.5 pt-1">
+                <label class="flex items-center gap-2.5 text-sm text-slate-700">
+                    {{ form.remove_duplicates }}
+                    <span>{{ form.remove_duplicates.label }}</span>
+                </label>
+                <label class="flex items-center gap-2.5 text-sm text-slate-700">
+                    {{ form.remove_invalid_dates }}
+                    <span>{{ form.remove_invalid_dates.label }}</span>
+                </label>
+                <label class="flex items-center gap-2.5 text-sm text-slate-700">
+                    {{ form.remove_negative_values }}
+                    <span>{{ form.remove_negative_values.label }}</span>
+                </label>
+                <label class="flex items-center gap-2.5 text-sm text-slate-700">
+                    {{ form.aggregate_daily }}
+                    <span>{{ form.aggregate_daily.label }}</span>
+                </label>
+            </div>
+
+            <div>
+                <label for="{{ form.missing_strategy.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1.5">
+                    {{ form.missing_strategy.label }}
+                </label>
+                {{ form.missing_strategy }}
+            </div>
+
+            <div>
+                <label for="{{ form.categorical_missing_strategy.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1.5">
+                    {{ form.categorical_missing_strategy.label }}
+                </label>
+                {{ form.categorical_missing_strategy }}
+            </div>
+
+            <div class="flex flex-wrap gap-2.5 pt-2">
+                <button type="submit" name="action" value="preview"
+                        class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    Preview Cleaning
+                </button>
+                <button type="submit" name="action" value="apply"
+                        class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-indigo-700">
+                    Apply &amp; Save Cleaned Version
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Cleaning Preview Output -->
+    <div class="lg:col-span-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h3 class="text-base font-semibold text-slate-900">Cleaning Inspection Preview</h3>
+        {% if preview_summary %}
+            <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div class="rounded-xl bg-slate-50 p-3">
+                    <p class="text-[11px] uppercase text-slate-500">Rows Before</p>
+                    <p class="mt-1 text-lg font-semibold text-slate-900">{{ preview_summary.rows_before }}</p>
+                </div>
+                <div class="rounded-xl bg-indigo-50 p-3">
+                    <p class="text-[11px] uppercase text-indigo-700">Rows After</p>
+                    <p class="mt-1 text-lg font-semibold text-indigo-900">{{ preview_summary.rows_after }}</p>
+                </div>
+                <div class="rounded-xl bg-slate-50 p-3">
+                    <p class="text-[11px] uppercase text-slate-500">Duplicates</p>
+                    <p class="mt-1 text-lg font-semibold text-slate-900">{{ preview_summary.duplicates_removed }}</p>
+                </div>
+                <div class="rounded-xl bg-slate-50 p-3">
+                    <p class="text-[11px] uppercase text-slate-500">Neg. Removed</p>
+                    <p class="mt-1 text-lg font-semibold text-slate-900">{{ preview_summary.negative_removed }}</p>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500">Operations Previewed</h4>
+                <ul class="mt-2 list-disc pl-5 text-sm text-slate-700 space-y-1">
+                    {% for op in preview_summary.operations %}
+                        <li>{{ op }}</li>
+                    {% endfor %}
+                    {% if preview_summary.suspicious_outliers_flagged > 0 %}
+                        <li class="text-amber-700">
+                            Flagged {{ preview_summary.suspicious_outliers_flagged }} extreme statistical outlier(s) (&gt; 3&times;IQR) for review.
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div class="mt-5">
+                <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Cleaned Data Sample (First 10 Rows)</h4>
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="min-w-full divide-y divide-slate-200 text-xs">
+                        <thead class="bg-slate-50 text-left font-semibold text-slate-600">
+                            <tr>
+                                {% for col in preview_summary.columns %}
+                                    <th class="px-3 py-2 whitespace-nowrap">{{ col }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for row in preview_summary.preview_rows %}
+                            <tr>
+                                {% for col, val in row.items %}
+                                    <td class="px-3 py-2 text-slate-700 whitespace-nowrap">{{ val }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% else %}
+            <div class="mt-6 flex h-56 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center">
+                <div>
+                    <p class="text-sm font-medium text-slate-700">No cleaning preview generated yet</p>
+                    <p class="mt-1 text-xs text-slate-500">Choose your options on the left and click <strong>Preview Cleaning</strong> to inspect the exact impact before saving.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

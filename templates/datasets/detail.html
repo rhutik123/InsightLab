@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ dataset.name }} — Dataset Profile | InsightLab{% endblock %}
+{% block page_heading %}Dataset Profile: {{ dataset.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-wrap items-center gap-2">
+        <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+            {{ dataset.get_dataset_type_display }}
+        </span>
+        {% if dataset.has_cleaned_version %}
+            <a href="?version=cleaned"
+               class="rounded-lg px-3 py-1.5 text-xs font-medium {% if showing_cleaned %}bg-indigo-600 text-white{% else %}border border-slate-300 bg-white text-slate-700 hover:bg-slate-50{% endif %}">
+                Cleaned Version
+            </a>
+            <a href="?version=original"
+               class="rounded-lg px-3 py-1.5 text-xs font-medium {% if not showing_cleaned %}bg-indigo-600 text-white{% else %}border border-slate-300 bg-white text-slate-700 hover:bg-slate-50{% endif %}">
+                Original Uploaded Version
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+        <a href="{% url 'datasets:map_columns' dataset.pk %}"
+           class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+            Edit Schema
+        </a>
+        <a href="{% url 'datasets:explorer' %}?dataset={{ dataset.pk }}"
+           class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+            Data Explorer
+        </a>
+        <a href="{% url 'datasets:cleaning' %}?dataset={{ dataset.pk }}"
+           class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+            Clean Data
+        </a>
+        <a href="{% url 'analytics:analysis' %}?dataset={{ dataset.pk }}"
+           class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+            Data Analysis
+        </a>
+        <a href="{% url 'forecasting:home' %}?dataset={{ dataset.pk }}"
+           class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700">
+            Forecasting
+        </a>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-6">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Rows &amp; Columns</p>
+        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ profile.row_count|default:0 }}</p>
+        <p class="mt-1 text-xs text-slate-500">{{ profile.col_count|default:0 }} columns &bull; {{ profile.numeric_col_count|default:0 }} numeric, {{ profile.categorical_col_count|default:0 }} categorical</p>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Date Range</p>
+        <p class="mt-2 text-base font-semibold text-slate-900">
+            {% if profile.date_min %}{{ profile.date_min }} &rarr; {{ profile.date_max }}{% else %}No date column mapped{% endif %}
+        </p>
+        <p class="mt-1 text-xs text-slate-500">
+            {% if profile.primary_date_column %}{{ profile.invalid_dates_count|default:0 }} invalid date row(s){% else %}Cross-sectional / tabular dataset{% endif %}
+        </p>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Primary Target ({{ profile.primary_target_column|default:"—" }})</p>
+        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ profile.total_revenue|floatformat:2 }}</p>
+        <p class="mt-1 text-xs text-slate-500">Mean: {{ profile.avg_revenue|floatformat:2 }} &bull; {{ profile.unique_products|default:0 }} unique groups</p>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Data Quality Issues</p>
+        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ profile.total_missing|default:0 }} missing</p>
+        <p class="mt-1 text-xs text-slate-500">
+            {{ profile.duplicate_rows|default:0 }} duplicates &bull; {{ profile.total_outliers|default:0 }} 3&times;IQR outliers
+        </p>
+    </div>
+</section>
+
+<!-- Missing Values & Numerical Columns Summary -->
+<section class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h3 class="text-base font-semibold text-slate-900">Column Missingness &amp; Quality Checks</h3>
+        <div class="mt-4 space-y-2 text-sm">
+            {% for col_name, miss_count in profile.missing_by_column.items %}
+            <div class="flex items-center justify-between rounded-lg bg-slate-50 px-3.5 py-2">
+                <span class="font-medium text-slate-700">{{ col_name }}</span>
+                <span class="text-xs font-semibold {% if miss_count > 0 %}text-amber-700{% else %}text-emerald-700{% endif %}">
+                    {{ miss_count }} missing
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-3 text-xs text-slate-600 border-t border-slate-100 pt-4">
+            <div>Duplicate records: <strong class="text-slate-900">{{ profile.duplicate_rows|default:0 }}</strong></div>
+            <div>Invalid dates: <strong class="text-slate-900">{{ profile.invalid_dates_count|default:0 }}</strong></div>
+            <div>Negative numbers: <strong class="text-slate-900">{{ profile.total_negative_values|default:0 }}</strong></div>
+            <div>Extreme outliers (3&times;IQR): <strong class="text-slate-900">{{ profile.total_outliers|default:0 }}</strong></div>
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h3 class="text-base font-semibold text-slate-900">Numerical Columns Statistics</h3>
+        {% if profile.numeric_columns_stats %}
+        <div class="mt-4 overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-xs">
+                <thead class="bg-slate-50 text-left font-semibold text-slate-600">
+                    <tr>
+                        <th class="px-3 py-2">Column</th>
+                        <th class="px-3 py-2">Mean</th>
+                        <th class="px-3 py-2">Median</th>
+                        <th class="px-3 py-2">Std</th>
+                        <th class="px-3 py-2">Min / Max</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                    {% for col_name, st in profile.numeric_columns_stats.items %}
+                    <tr>
+                        <td class="px-3 py-2 font-medium text-slate-900">{{ col_name }}</td>
+                        <td class="px-3 py-2">{{ st.mean|default:"—" }}</td>
+                        <td class="px-3 py-2">{{ st.median|default:"—" }}</td>
+                        <td class="px-3 py-2">{{ st.std|default:"—" }}</td>
+                        <td class="px-3 py-2">{{ st.min|default:"—" }} / {{ st.max|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p class="mt-3 text-xs text-slate-500">No numerical columns detected in this dataset.</p>
+        {% endif %}
+
+        {% if dataset.cleaning_log %}
+        <div class="mt-4 border-t border-slate-100 pt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recorded Cleaning Operations</h4>
+            <ul class="mt-2 list-disc pl-5 text-xs text-slate-600 space-y-1">
+                {% for op in dataset.cleaning_log %}
+                    <li>{{ op }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Categorical Columns Breakdown -->
+{% if profile.categorical_columns_stats %}
+<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs mb-6">
+    <h3 class="text-base font-semibold text-slate-900 mb-3">Categorical Feature Breakdown</h3>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {% for col_name, cat in profile.categorical_columns_stats.items %}
+        <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-semibold text-slate-900">{{ col_name }}</span>
+                <span class="text-xs text-slate-500">{{ cat.unique_count }} unique</span>
+            </div>
+            <ul class="space-y-1 text-xs text-slate-700">
+                {% for val, cnt in cat.top_values %}
+                <li class="flex justify-between">
+                    <span class="truncate pr-2">{{ val }}</span>
+                    <span class="font-medium text-slate-900">{{ cnt }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Sample Rows Preview -->
+<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+    <h3 class="text-base font-semibold text-slate-900 mb-3">Sample Records (First 10 Rows)</h3>
+    <div class="overflow-x-auto rounded-xl border border-slate-200">
+        <table class="min-w-full divide-y divide-slate-200 text-xs">
+            <thead class="bg-slate-50 text-left font-semibold text-slate-600">
+                <tr>
+                    {% for col in profile.columns %}
+                        <th class="px-3 py-2 whitespace-nowrap">{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for row in profile.sample_rows %}
+                <tr>
+                    {% for col, val in row.items %}
+                        <td class="px-3 py-2 text-slate-700 whitespace-nowrap">{{ val }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+
+{% block title %}Forecasting — InsightLab{% endblock %}
+{% block page_heading %}Predictive Time-Series Forecasting{% endblock %}
+
+{% block content %}
+{% if not has_datasets %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
+    <h3 class="text-base font-semibold text-slate-900">No mapped datasets available</h3>
+    <p class="mt-1 text-sm text-slate-600">Upload and configure a time-series CSV dataset (with a Date column and numerical target) to run forecasts.</p>
+    <a href="{% url 'datasets:upload' %}"
+       class="mt-5 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+        Upload CSV Dataset
+    </a>
+</div>
+{% else %}
+
+{% if error_message %}
+<div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    {{ error_message }}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-12 mb-6">
+    <!-- Forecast Configuration Form -->
+    <div class="lg:col-span-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h2 class="text-base font-semibold text-slate-900">Configure Forecast Run</h2>
+        <p class="mt-1 text-xs text-slate-600">
+            Models train and evaluate on strict chronological splits (never random splits) across any mapped date and numerical target column.
+        </p>
+
+        <form method="post" class="mt-4 space-y-3.5">
+            {% csrf_token %}
+
+            <div>
+                <label for="{{ form.dataset.id_for_label }}" class="block text-xs font-medium text-slate-700 mb-1">{{ form.dataset.label }}</label>
+                {{ form.dataset }}
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="{{ form.dataset_version.id_for_label }}" class="block text-xs font-medium text-slate-700 mb-1">{{ form.dataset_version.label }}</label>
+                    {{ form.dataset_version }}
+                </div>
+                <div>
+                    <label for="id_target_picker" class="block text-xs font-medium text-slate-700 mb-1">Target Metric</label>
+                    <select id="id_target_picker"
+                            class="block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900">
+                    </select>
+                    <div class="hidden">{{ form.target_metric }}</div>
+                </div>
+            </div>
+
+            <div>
+                <label for="id_product_picker" class="block text-xs font-medium text-slate-700 mb-1">Segment / Group Filter</label>
+                <select id="id_product_picker"
+                        class="block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900">
+                    <option value="__ALL__">All Records (Aggregated)</option>
+                </select>
+                <div class="hidden">{{ form.product_name }}</div>
+            </div>
+
+            <div>
+                <label for="{{ form.model_name.id_for_label }}" class="block text-xs font-medium text-slate-700 mb-1">{{ form.model_name.label }}</label>
+                {{ form.model_name }}
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="{{ form.aggregation_freq.id_for_label }}" class="block text-xs font-medium text-slate-700 mb-1">{{ form.aggregation_freq.label }}</label>
+                    {{ form.aggregation_freq }}
+                </div>
+                <div>
+                    <label for="{{ form.preprocessing_method.id_for_label }}" class="block text-xs font-medium text-slate-700 mb-1">{{ form.preprocessing_method.label }}</label>
+                    {{ form.preprocessing_method }}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2.5">
+                <div>
+                    <label for="{{ form.test_size_ratio.id_for_label }}" class="block text-[11px] font-medium text-slate-700 mb-1">Test Ratio</label>
+                    {{ form.test_size_ratio }}
+                </div>
+                <div>
+                    <label for="{{ form.forecast_horizon.id_for_label }}" class="block text-[11px] font-medium text-slate-700 mb-1">Horizon</label>
+                    {{ form.forecast_horizon }}
+                </div>
+                <div>
+                    <label for="{{ form.random_seed.id_for_label }}" class="block text-[11px] font-medium text-slate-700 mb-1">Seed</label>
+                    {{ form.random_seed }}
+                </div>
+            </div>
+
+            <button type="submit"
+                    class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-xs hover:bg-indigo-700">
+                Run Forecast &amp; Evaluate
+            </button>
+        </form>
+    </div>
+
+    <!-- Results & Visualizations -->
+    <div class="lg:col-span-8 space-y-6">
+        {% if latest_runs %}
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div>
+                    <h3 class="text-base font-semibold text-slate-900">
+                        Held-Out Chronological Evaluation ({{ best_run.target_metric }} &bull; {{ best_run.product_display }})
+                    </h3>
+                    <p class="text-xs text-slate-500">
+                        Train: {{ best_run.train_start_date }} to {{ best_run.train_end_date }} ({{ best_run.train_rows }} periods) &bull;
+                        Test: {{ best_run.test_start_date }} to {{ best_run.test_end_date }} ({{ best_run.test_rows }} periods)
+                    </p>
+                </div>
+                <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                    Lowest Test RMSE: {{ best_run.get_model_name_display }}
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 text-xs">
+                    <thead class="bg-slate-50 text-left font-semibold text-slate-600">
+                        <tr>
+                            <th class="px-3 py-2">Model</th>
+                            <th class="px-3 py-2">MAE</th>
+                            <th class="px-3 py-2">RMSE</th>
+                            <th class="px-3 py-2">MAPE (%)</th>
+                            <th class="px-3 py-2">R&sup2;</th>
+                            <th class="px-3 py-2 text-right">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for r in latest_runs %}
+                        <tr class="{% if best_run and r.pk == best_run.pk %}bg-indigo-50/50{% endif %}">
+                            <td class="px-3 py-2.5 font-medium text-slate-900">{{ r.get_model_name_display }}</td>
+                            <td class="px-3 py-2.5">{{ r.mae|floatformat:2|default:"—" }}</td>
+                            <td class="px-3 py-2.5 font-semibold">{{ r.rmse|floatformat:2|default:"—" }}</td>
+                            <td class="px-3 py-2.5">{{ r.mape|floatformat:2|default:"—" }}</td>
+                            <td class="px-3 py-2.5">{{ r.r2|floatformat:3|default:"—" }}</td>
+                            <td class="px-3 py-2.5 text-right">
+                                <a href="{% url 'forecasting:detail' r.pk %}" class="text-indigo-600 hover:text-indigo-700 font-medium">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="mt-2 text-[11px] text-slate-500">
+                Note: {{ best_run.mape_note }} Best model reflects performance on this specific chronological split, not universal algorithm superiority.
+            </p>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+            <h3 class="text-base font-semibold text-slate-900 mb-3">Actual vs. Predicted &amp; Future Forecast</h3>
+            <div class="h-72"><canvas id="forecastLineChart"></canvas></div>
+        </div>
+
+        {% if latest_runs|length > 1 %}
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+            <h3 class="text-base font-semibold text-slate-900 mb-3">Model Error Comparison (Test RMSE &amp; MAE)</h3>
+            <div class="h-56"><canvas id="forecastCompareChart"></canvas></div>
+        </div>
+        {% endif %}
+
+        <!-- Decision Support Insights -->
+        {% if active_insights %}
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+            <h3 class="text-base font-semibold text-slate-900 mb-1">Decision Support Insights</h3>
+            <p class="text-xs text-slate-500 mb-4">Generated from historical observations and forecast outputs.</p>
+            <div class="space-y-3">
+                {% for ins in active_insights %}
+                <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                    <span class="text-xs font-semibold uppercase tracking-wide text-indigo-700">{{ ins.category }}</span>
+                    <p class="mt-1 text-sm font-semibold text-slate-900">{{ ins.title }}</p>
+                    <p class="mt-1 text-xs text-slate-600">{{ ins.detail }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
+            <h3 class="text-base font-semibold text-slate-900">Ready to run predictive forecasting</h3>
+            <p class="mt-1 text-sm text-slate-600 max-w-md mx-auto">
+                Select a time-series dataset and numerical target column on the left, then choose <strong>Compare All 5 Models</strong> or an individual model.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Saved Forecast Runs Table -->
+<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-base font-semibold text-slate-900">Saved Forecasting Runs</h3>
+        <a href="{% url 'forecasting:compare' %}" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">Open Side-by-Side Comparison &rarr;</a>
+    </div>
+    {% if saved_experiments %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200 text-xs">
+            <thead class="bg-slate-50 text-left font-semibold text-slate-600">
+                <tr>
+                    <th class="px-3 py-2.5">Dataset</th>
+                    <th class="px-3 py-2.5">Target &amp; Scope</th>
+                    <th class="px-3 py-2.5">Model</th>
+                    <th class="px-3 py-2.5">MAE</th>
+                    <th class="px-3 py-2.5">RMSE</th>
+                    <th class="px-3 py-2.5">MAPE (%)</th>
+                    <th class="px-3 py-2.5">Date</th>
+                    <th class="px-3 py-2.5 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for exp in saved_experiments %}
+                <tr>
+                    <td class="px-3 py-2.5 font-medium text-slate-900">{{ exp.dataset.name }}</td>
+                    <td class="px-3 py-2.5 text-slate-700">{{ exp.target_metric }} ({{ exp.product_display }})</td>
+                    <td class="px-3 py-2.5 text-slate-700">{{ exp.get_model_name_display }}</td>
+                    <td class="px-3 py-2.5">{{ exp.mae|floatformat:2|default:"—" }}</td>
+                    <td class="px-3 py-2.5 font-semibold">{{ exp.rmse|floatformat:2|default:"—" }}</td>
+                    <td class="px-3 py-2.5">{{ exp.mape|floatformat:2|default:"—" }}</td>
+                    <td class="px-3 py-2.5 text-slate-500">{{ exp.created_at|date:"M d, H:i" }}</td>
+                    <td class="px-3 py-2.5 text-right">
+                        <div class="inline-flex items-center gap-2">
+                            <a href="{% url 'forecasting:detail' exp.pk %}" class="text-indigo-600 hover:text-indigo-700 font-medium">View</a>
+                            <form method="post" action="{% url 'forecasting:delete' exp.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="text-red-600 hover:text-red-700 font-medium">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="text-sm text-slate-500">No forecast runs saved yet.</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{{ dataset_meta|json_script:"forecast-dataset-meta" }}
+{{ chart_payload|json_script:"forecast-chart-payload" }}
+<script>
+const dsMeta = JSON.parse(document.getElementById('forecast-dataset-meta').textContent);
+const dsSelect = document.getElementById('id_dataset');
+const prodPicker = document.getElementById('id_product_picker');
+const prodInput = document.getElementById('id_product_name');
+const targetPicker = document.getElementById('id_target_picker');
+const targetInput = document.getElementById('id_target_metric');
+
+function refreshDatasetOptions() {
+    if (!dsSelect) return;
+    const info = dsMeta[dsSelect.value] || { products: [], numeric_cols: [], default_target: '' };
+    if (prodPicker && prodInput) {
+        const currentProd = prodInput.value || '__ALL__';
+        prodPicker.innerHTML = '<option value="__ALL__">All Records (Aggregated)</option>';
+        info.products.forEach((p) => {
+            const opt = document.createElement('option');
+            opt.value = p;
+            opt.textContent = p;
+            if (p === currentProd) opt.selected = true;
+            prodPicker.appendChild(opt);
+        });
+        prodInput.value = prodPicker.value;
+    }
+    if (targetPicker && targetInput) {
+        const currentTarget = targetInput.value || info.default_target;
+        targetPicker.innerHTML = '';
+        info.numeric_cols.forEach((col) => {
+            const opt = document.createElement('option');
+            opt.value = col;
+            opt.textContent = col;
+            if (col === currentTarget) opt.selected = true;
+            targetPicker.appendChild(opt);
+        });
+        targetInput.value = targetPicker.value;
+    }
+}
+if (dsSelect) {
+    refreshDatasetOptions();
+    dsSelect.addEventListener('change', () => {
+        if (prodInput) prodInput.value = '__ALL__';
+        if (targetInput) targetInput.value = '';
+        refreshDatasetOptions();
+    });
+    if (prodPicker) prodPicker.addEventListener('change', () => { prodInput.value = prodPicker.value; });
+    if (targetPicker) targetPicker.addEventListener('change', () => { targetInput.value = targetPicker.value; });
+}
+
+const payload = JSON.parse(document.getElementById('forecast-chart-payload').textContent);
+if (payload && typeof Chart !== 'undefined') {
+    const allDates = payload.history_dates.concat(payload.future_dates);
+    const actualSeries = payload.history_actuals.concat(payload.future_dates.map(() => null));
+    const trainPadding = new Array(payload.history_dates.length - payload.test_dates.length).fill(null);
+    const testPredSeries = trainPadding.concat(payload.test_predictions).concat(payload.future_dates.map(() => null));
+    const futureSeries = new Array(payload.history_dates.length).fill(null).concat(payload.future_predictions);
+
+    new Chart(document.getElementById('forecastLineChart'), {
+        type: 'line',
+        data: {
+            labels: allDates,
+            datasets: [
+                { label: 'Actual (' + payload.target_label + ')', data: actualSeries, borderColor: '#0f172a', tension: 0.2, pointRadius: 1.5 },
+                { label: payload.best_model_label + ' (Test Pred)', data: testPredSeries, borderColor: '#4f46e5', borderDash: [5, 4], tension: 0.2, pointRadius: 2 },
+                { label: payload.best_model_label + ' (Future Forecast)', data: futureSeries, borderColor: '#10b981', borderDash: [4, 4], tension: 0.2, pointRadius: 2.5 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 10 } } } }
+    });
+
+    const compCanvas = document.getElementById('forecastCompareChart');
+    if (compCanvas && payload.comparison_labels) {
+        new Chart(compCanvas, {
+            type: 'bar',
+            data: {
+                labels: payload.comparison_labels,
+                datasets: [
+                    { label: 'Test RMSE', data: payload.comparison_rmse, backgroundColor: '#4f46e5', borderRadius: 5 },
+                    { label: 'Test MAE', data: payload.comparison_mae, backgroundColor: '#94a3b8', borderRadius: 5 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+}
+</script>
+{% endblock %}

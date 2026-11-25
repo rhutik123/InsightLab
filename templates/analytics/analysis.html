@@ -1,0 +1,354 @@
+{% extends 'base.html' %}
+
+{% block title %}Data Analysis — InsightLab{% endblock %}
+{% block page_heading %}Exploratory Data Analysis{% endblock %}
+
+{% block content %}
+{% if not datasets %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
+    <h3 class="text-base font-semibold text-slate-900">No mapped datasets available</h3>
+    <p class="mt-1 text-sm text-slate-600">Upload and configure a CSV dataset to run exploratory data analysis.</p>
+    <a href="{% url 'datasets:upload' %}"
+       class="mt-5 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+        Upload CSV Dataset
+    </a>
+</div>
+{% else %}
+<!-- Filter Controls -->
+<form method="get" class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-6 items-end">
+        <div>
+            <label for="id_dataset" class="block text-xs font-medium text-slate-600 mb-1">Dataset</label>
+            <select id="id_dataset" name="dataset"
+                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+                {% for ds in datasets %}
+                    <option value="{{ ds.pk }}" {% if selected_dataset.pk == ds.pk %}selected{% endif %}>{{ ds.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label for="id_target" class="block text-xs font-medium text-slate-600 mb-1">Numerical Target</label>
+            <select id="id_target" name="target"
+                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+                {% for col in numeric_cols %}
+                    <option value="{{ col }}" {% if selected_target == col %}selected{% endif %}>{{ col }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label for="id_group_col" class="block text-xs font-medium text-slate-600 mb-1">Group By Column</label>
+            <select id="id_group_col" name="group_col"
+                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+                <option value="" {% if not selected_group_col %}selected{% endif %}>-- None --</option>
+                {% for col in categorical_cols %}
+                    <option value="{{ col }}" {% if selected_group_col == col %}selected{% endif %}>{{ col }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label for="id_product" class="block text-xs font-medium text-slate-600 mb-1">Segment Filter</label>
+            <select id="id_product" name="product"
+                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+                <option value="__ALL__" {% if selected_product == '__ALL__' %}selected{% endif %}>All Records</option>
+                {% if eda and eda.all_groups %}
+                    {% for p in eda.all_groups %}
+                        <option value="{{ p }}" {% if selected_product == p %}selected{% endif %}>{{ p }}</option>
+                    {% endfor %}
+                {% endif %}
+            </select>
+        </div>
+
+        <div>
+            <label for="id_version" class="block text-xs font-medium text-slate-600 mb-1">Version</label>
+            <select id="id_version" name="version"
+                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+                <option value="cleaned" {% if used_version == 'cleaned' %}selected{% endif %}>Cleaned (if available)</option>
+                <option value="original" {% if used_version == 'original' %}selected{% endif %}>Original Uploaded</option>
+            </select>
+        </div>
+
+        <div>
+            <button type="submit"
+                    class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                Update Analysis
+            </button>
+        </div>
+    </div>
+</form>
+
+{% if eda and eda.has_data %}
+<!-- KPI Row -->
+<section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-6">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total {{ eda.target_col }}</p>
+        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ eda.summary.total_target|floatformat:2 }}</p>
+        <p class="mt-1 text-xs text-slate-500">Mean: {{ eda.summary.avg_target|floatformat:2 }}</p>
+    </div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Median {{ eda.target_col }}</p>
+        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ eda.summary.median_target|floatformat:2 }}</p>
+        <p class="mt-1 text-xs text-slate-500">Std Dev: {{ eda.summary.std_target|floatformat:2 }}</p>
+    </div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">{% if eda.has_date %}Active Periods{% else %}Records Analyzed{% endif %}</p>
+        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ eda.summary.active_days }}</p>
+        <p class="mt-1 text-xs text-slate-500">{{ eda.summary.record_count }} source row(s)</p>
+    </div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Observation Window</p>
+        <p class="mt-2 text-base font-semibold text-slate-900">
+            {% if eda.has_date %}{{ eda.summary.date_start }} &rarr; {{ eda.summary.date_end }}{% else %}Cross-sectional{% endif %}
+        </p>
+        <p class="mt-1 text-xs text-slate-500">Using {{ used_version }} data</p>
+    </div>
+</section>
+
+{% if eda.has_date %}
+<!-- Daily & Weekly Trends -->
+<section class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h3 class="text-base font-semibold text-slate-900 mb-3">Daily {{ eda.target_col }} Trend</h3>
+        <div class="h-64"><canvas id="edaDailyChart"></canvas></div>
+    </div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h3 class="text-base font-semibold text-slate-900 mb-3">Weekly {{ eda.target_col }} Trend</h3>
+        {% if eda.weekly_trend.available %}
+            <div class="h-64"><canvas id="edaWeeklyChart"></canvas></div>
+        {% else %}
+            <div class="flex h-64 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500">
+                Insufficient multi-week data for weekly trend visualization.
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Monthly & Yearly Trends -->
+<section class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h3 class="text-base font-semibold text-slate-900 mb-3">Monthly {{ eda.target_col }} Trend</h3>
+        {% if eda.monthly_trend.available %}
+            <div class="h-64"><canvas id="edaMonthlyChart"></canvas></div>
+        {% else %}
+            <div class="flex h-64 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500">
+                At least 2 distinct months are required to render a monthly trend.
+            </div>
+        {% endif %}
+    </div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h3 class="text-base font-semibold text-slate-900 mb-3">Yearly {{ eda.target_col }} Trend</h3>
+        {% if eda.yearly_trend.available %}
+            <div class="h-64"><canvas id="edaYearlyChart"></canvas></div>
+        {% else %}
+            <div class="flex h-64 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500">
+                Insufficient multi-year history (requires &ge; 2 distinct years) for a yearly comparison chart.
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Group Comparison & Distribution -->
+<section class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h3 class="text-base font-semibold text-slate-900 mb-3">
+            {% if eda.group_comparison.available %}{{ eda.target_col }} by {{ eda.group_col }}{% else %}Segment Comparison{% endif %}
+        </h3>
+        {% if eda.group_comparison.available %}
+            <div class="h-64"><canvas id="edaGroupChart"></canvas></div>
+        {% else %}
+            <div class="flex h-64 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500">
+                Select a categorical grouping column above to compare segments.
+            </div>
+        {% endif %}
+    </div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h3 class="text-base font-semibold text-slate-900 mb-3">{{ eda.target_col }} Distribution</h3>
+        {% if eda.distribution.has_chart %}
+            <div class="h-64"><canvas id="edaDistChart"></canvas></div>
+        {% else %}
+            <div class="flex h-64 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500">
+                Insufficient distinct observations to build a distribution histogram.
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+{% if eda.has_date %}
+<!-- Seasonality Row -->
+<section class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h3 class="text-base font-semibold text-slate-900 mb-1">Day-of-Week Pattern</h3>
+        <p class="text-xs text-slate-500 mb-3">Mean {{ eda.target_col }} across weekdays.</p>
+        {% if eda.weekday_pattern.available %}
+            <div class="h-64"><canvas id="edaWeekdayChart"></canvas></div>
+        {% else %}
+            <div class="flex h-64 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500">
+                At least 14 distinct dates are needed to assess day-of-week patterns.
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h3 class="text-base font-semibold text-slate-900 mb-1">Seasonal Decomposition (7-Day Component)</h3>
+        <p class="text-xs text-slate-500 mb-3">{{ eda.seasonal_decomposition.note }}</p>
+        {% if eda.seasonal_decomposition.available %}
+            <div class="h-64"><canvas id="edaDecompChart"></canvas></div>
+        {% else %}
+            <div class="flex h-64 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500">
+                {{ eda.seasonal_decomposition.note }}
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Numeric Correlations -->
+{% if eda.correlations %}
+<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs mb-6">
+    <h3 class="text-base font-semibold text-slate-900 mb-3">Numerical Feature Correlations (Pearson r)</h3>
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {% for c in eda.correlations %}
+        <div class="rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-xs flex items-center justify-between">
+            <span class="font-medium text-slate-700">{{ c.col_a }} &harr; {{ c.col_b }}</span>
+            <span class="font-mono font-semibold text-indigo-700">{{ c.pearson_r }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Top & Lowest Segments -->
+{% if eda.has_group and eda.best_groups %}
+<section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h3 class="text-base font-semibold text-slate-900 mb-3">Top {{ eda.group_col }} Segments (By {{ eda.target_col }})</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-xs">
+                <thead class="bg-slate-50 text-left font-semibold text-slate-600">
+                    <tr>
+                        <th class="px-3 py-2">{{ eda.group_col }}</th>
+                        <th class="px-3 py-2">Total {{ eda.target_col }}</th>
+                        <th class="px-3 py-2">Mean</th>
+                        <th class="px-3 py-2">Records</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for p in eda.best_groups %}
+                    <tr>
+                        <td class="px-3 py-2 font-medium text-slate-900">{{ p.group }}</td>
+                        <td class="px-3 py-2 text-slate-700">{{ p.total_target|floatformat:2 }}</td>
+                        <td class="px-3 py-2 text-slate-700">{{ p.avg_target|floatformat:2 }}</td>
+                        <td class="px-3 py-2 text-slate-500">{{ p.record_count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h3 class="text-base font-semibold text-slate-900 mb-3">Lowest {{ eda.group_col }} Segments (By {{ eda.target_col }})</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-xs">
+                <thead class="bg-slate-50 text-left font-semibold text-slate-600">
+                    <tr>
+                        <th class="px-3 py-2">{{ eda.group_col }}</th>
+                        <th class="px-3 py-2">Total {{ eda.target_col }}</th>
+                        <th class="px-3 py-2">Mean</th>
+                        <th class="px-3 py-2">Records</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for p in eda.lowest_groups %}
+                    <tr>
+                        <td class="px-3 py-2 font-medium text-slate-900">{{ p.group }}</td>
+                        <td class="px-3 py-2 text-slate-700">{{ p.total_target|floatformat:2 }}</td>
+                        <td class="px-3 py-2 text-slate-700">{{ p.avg_target|floatformat:2 }}</td>
+                        <td class="px-3 py-2 text-slate-500">{{ p.record_count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% elif eda %}
+<div class="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
+    {{ eda.message }}
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{{ eda|json_script:"eda-charts-data" }}
+<script>
+const eda = JSON.parse(document.getElementById('eda-charts-data').textContent);
+if (eda && eda.has_data && typeof Chart !== 'undefined') {
+    const makeLine = (id, labels, values, label, color) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        new Chart(el, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{ label, data: values, borderColor: color, backgroundColor: color + '18', fill: true, tension: 0.25, pointRadius: 1.5 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 8 } } } }
+        });
+    };
+
+    const makeBar = (id, labels, values, label, color) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        new Chart(el, {
+            type: 'bar',
+            data: { labels, datasets: [{ label, data: values, backgroundColor: color, borderRadius: 5 }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    };
+
+    if (eda.has_date && eda.daily_trend.available) {
+        makeLine('edaDailyChart', eda.daily_trend.labels, eda.daily_trend.values, eda.target_col, '#4f46e5');
+    }
+    if (eda.weekly_trend.available) {
+        makeLine('edaWeeklyChart', eda.weekly_trend.labels, eda.weekly_trend.values, 'Weekly ' + eda.target_col, '#0ea5e9');
+    }
+    if (eda.monthly_trend.available) {
+        makeBar('edaMonthlyChart', eda.monthly_trend.labels, eda.monthly_trend.values, 'Monthly ' + eda.target_col, '#10b981');
+    }
+    if (eda.yearly_trend.available) {
+        makeBar('edaYearlyChart', eda.yearly_trend.labels, eda.yearly_trend.values, 'Yearly ' + eda.target_col, '#8b5cf6');
+    }
+    if (eda.group_comparison.available) {
+        makeBar('edaGroupChart', eda.group_comparison.labels, eda.group_comparison.target_sum, eda.target_col, '#6366f1');
+    }
+    if (eda.distribution.has_chart) {
+        makeBar('edaDistChart', eda.distribution.labels, eda.distribution.counts, 'Record Count', '#f59e0b');
+    }
+    if (eda.weekday_pattern.available) {
+        makeBar('edaWeekdayChart', eda.weekday_pattern.labels, eda.weekday_pattern.avg_values, 'Mean ' + eda.target_col, '#06b6d4');
+    }
+    if (eda.seasonal_decomposition.available) {
+        const el = document.getElementById('edaDecompChart');
+        if (el) {
+            new Chart(el, {
+                type: 'line',
+                data: {
+                    labels: eda.seasonal_decomposition.dates,
+                    datasets: [
+                        { label: 'Trend Component', data: eda.seasonal_decomposition.trend, borderColor: '#0f172a', tension: 0.25, pointRadius: 0 },
+                        { label: 'Seasonal Component', data: eda.seasonal_decomposition.seasonal, borderColor: '#6366f1', tension: 0.25, pointRadius: 0 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 8 } } } }
+            });
+        }
+    }
+}
+</script>
+{% endblock %}

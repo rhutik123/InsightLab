@@ -1,0 +1,38 @@
+# Python & Virtual Environments
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# Testing & Linters
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Django & Local Secrets
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+.dev_secret_key
+.env
+*.log
+
+# Node / Frontend Build Artifacts
+node_modules/
+
+# IDE & OS Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/

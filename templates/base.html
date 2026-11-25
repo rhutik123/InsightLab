@@ -1,0 +1,229 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="InsightLab — Intelligent Data Analytics and Predictive Intelligence Platform. Transform Data into Meaningful Insights.">
+    <title>{% block title %}InsightLab — Intelligent Data Analytics &amp; Predictive Intelligence{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full text-slate-900 antialiased">
+
+{% if user.is_authenticated %}
+<div class="min-h-full flex bg-slate-50">
+    <!-- Mobile sidebar backdrop -->
+    <div id="sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-slate-900/50 lg:hidden"></div>
+
+    <!-- Sidebar navigation -->
+    <aside id="app-sidebar"
+           class="fixed inset-y-0 left-0 z-40 w-64 -translate-x-full transform bg-white border-r border-slate-200 transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 flex flex-col">
+        <div class="flex h-16 items-center justify-between px-5 border-b border-slate-200">
+            <a href="{% url 'dashboard' %}" class="flex items-center gap-2.5">
+                <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white font-bold text-sm shadow-xs">
+                    IL
+                </span>
+                <div>
+                    <p class="text-sm font-semibold text-slate-900 leading-tight">InsightLab</p>
+                    <p class="text-[11px] text-slate-500 leading-tight">Predictive Intelligence</p>
+                </div>
+            </a>
+            <button id="close-sidebar-btn" type="button" class="lg:hidden rounded-md p-1.5 text-slate-500 hover:bg-slate-100" aria-label="Close navigation">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1 text-sm">
+            <p class="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Workspace</p>
+
+            <a href="{% url 'dashboard' %}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors {% if active_nav == 'dashboard' %}bg-indigo-50 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="{% url 'datasets:list' %}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors {% if active_nav == 'datasets' %}bg-indigo-50 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                </svg>
+                <span>My Datasets</span>
+            </a>
+
+            <a href="{% url 'datasets:explorer' %}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors {% if active_nav == 'explorer' %}bg-indigo-50 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span>Data Explorer</span>
+            </a>
+
+            <a href="{% url 'datasets:cleaning' %}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors {% if active_nav == 'cleaning' %}bg-indigo-50 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                <span>Data Cleaning</span>
+            </a>
+
+            <p class="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Analytics</p>
+
+            <a href="{% url 'analytics:analysis' %}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors {% if active_nav == 'analysis' %}bg-indigo-50 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span>Data Analysis</span>
+            </a>
+
+            <a href="{% url 'analytics:visualizations' %}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors {% if active_nav == 'visualizations' %}bg-indigo-50 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                </svg>
+                <span>Visualizations</span>
+            </a>
+
+            <a href="{% url 'analytics:anomalies' %}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors {% if active_nav == 'anomalies' %}bg-indigo-50 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>Anomaly Detection</span>
+            </a>
+
+            <p class="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Intelligence</p>
+
+            <a href="{% url 'forecasting:home' %}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors {% if active_nav == 'forecasting' %}bg-indigo-50 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                <span>Forecasting</span>
+            </a>
+
+            <a href="{% url 'forecasting:experiments' %}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors {% if active_nav == 'experiments' %}bg-indigo-50 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+                <span>Experiment Lab</span>
+            </a>
+
+            <a href="{% url 'forecasting:compare' %}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors {% if active_nav == 'compare' %}bg-indigo-50 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                </svg>
+                <span>Model Comparison</span>
+            </a>
+
+            <a href="{% url 'reports:list' %}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors {% if active_nav == 'reports' %}bg-indigo-50 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Reports</span>
+            </a>
+
+            <p class="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Account</p>
+
+            <a href="{% url 'accounts:settings' %}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors {% if active_nav == 'settings' %}bg-indigo-50 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Settings</span>
+            </a>
+        </nav>
+
+        <div class="border-t border-slate-200 p-4">
+            <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                    <p class="truncate text-sm font-medium text-slate-900">
+                        {{ user.get_full_name|default:user.username }}
+                    </p>
+                    <p class="truncate text-xs text-slate-500">{{ user.email|default:"Signed in" }}</p>
+                </div>
+                <form method="post" action="{% url 'accounts:logout' %}">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                        Sign out
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main column -->
+    <div class="flex-1 flex flex-col min-w-0">
+        <header class="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 backdrop-blur-xs px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-3">
+                <button id="open-sidebar-btn" type="button"
+                        class="lg:hidden rounded-lg p-2 text-slate-600 hover:bg-slate-100"
+                        aria-label="Open navigation">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+                <h1 class="text-lg font-semibold text-slate-900">{% block page_heading %}{{ page_title|default:"Dashboard" }}{% endblock %}</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="hidden sm:inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
+                    InsightLab &bull; Transform Data into Meaningful Insights
+                </span>
+            </div>
+        </header>
+
+        <main class="flex-1 px-4 py-6 sm:px-6 lg:px-8 max-w-7xl w-full mx-auto">
+            {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for message in messages %}
+                        <div data-alert-item
+                             class="flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm {% if 'error' in message.tags %}border-red-200 bg-red-50 text-red-800{% elif 'warning' in message.tags %}border-amber-200 bg-amber-50 text-amber-800{% elif 'success' in message.tags %}border-emerald-200 bg-emerald-50 text-emerald-800{% else %}border-indigo-200 bg-indigo-50 text-indigo-800{% endif %}">
+                            <span>{{ message }}</span>
+                            <button type="button" data-dismiss-alert class="text-current/70 hover:text-current font-semibold text-xs">
+                                Dismiss
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+{% else %}
+<div class="min-h-full flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50">
+    {% if messages %}
+        <div class="sm:mx-auto sm:w-full sm:max-w-md mb-4 space-y-2">
+            {% for message in messages %}
+                <div data-alert-item
+                     class="flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm {% if 'error' in message.tags %}border-red-200 bg-red-50 text-red-800{% elif 'success' in message.tags %}border-emerald-200 bg-emerald-50 text-emerald-800{% else %}border-indigo-200 bg-indigo-50 text-indigo-800{% endif %}">
+                    <span>{{ message }}</span>
+                    <button type="button" data-dismiss-alert class="text-current/70 hover:text-current font-semibold text-xs">
+                        Dismiss
+                    </button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% block auth_content %}{% endblock %}
+</div>
+{% endif %}
+
+<script src="{% static 'js/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/app.js' %}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

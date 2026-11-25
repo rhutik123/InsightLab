@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard — InsightLab{% endblock %}
+
+{% block page_heading %}Workspace Overview{% endblock %}
+
+{% block content %}
+{% if not has_datasets %}
+<div class="mb-6 rounded-2xl border border-indigo-200 bg-white p-6 shadow-xs">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <span class="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+                InsightLab &bull; Transform Data into Meaningful Insights
+            </span>
+            <h2 class="mt-2 text-lg font-semibold text-slate-900">
+                Welcome, {{ user.first_name|default:user.username }}! Your analytics workspace is ready.
+            </h2>
+            <p class="mt-1 text-sm text-slate-600 max-w-2xl">
+                Upload any structured CSV dataset (sales, web traffic, expenses, inventory, or operational metrics) to run automated profiling, data cleaning, exploratory analysis, anomaly detection, and predictive modeling.
+            </p>
+        </div>
+        <div class="flex shrink-0 flex-wrap gap-2">
+            <a href="{% url 'datasets:sample_csv' %}?type=traffic"
+               class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">
+                Sample Traffic CSV
+            </a>
+            <a href="{% url 'datasets:sample_csv' %}?type=sales"
+               class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">
+                Sample Sales CSV
+            </a>
+            <a href="{% url 'datasets:upload' %}"
+               class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-indigo-700">
+                + Upload CSV
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- General Workspace KPI Cards -->
+<section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-6">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total Datasets</p>
+        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total_datasets }}</p>
+        <p class="mt-1 text-xs text-slate-500">Uploaded to your workspace</p>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total Records</p>
+        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total_records }}</p>
+        <p class="mt-1 text-xs text-slate-500">Rows across active datasets</p>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Numerical Columns</p>
+        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total_numeric_columns }}</p>
+        <p class="mt-1 text-xs text-slate-500">{{ total_categorical_columns }} categorical feature(s) detected</p>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Recent Analyses</p>
+        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ total_analyses }}</p>
+        <p class="mt-1 text-xs text-slate-500">Saved models, experiments &amp; reports</p>
+    </div>
+</section>
+
+<!-- Dataset-Aware Visualizations Row -->
+<section class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-base font-semibold text-slate-900">
+                    {% if dashboard_charts and dashboard_charts.primary_chart %}{{ dashboard_charts.primary_chart.title }}{% else %}Dataset Overview &amp; Trends{% endif %}
+                </h3>
+                {% if dashboard_charts and dashboard_charts.primary_chart %}
+                    <p class="text-xs text-slate-500">{{ dashboard_charts.primary_chart.subtitle }}</p>
+                {% endif %}
+            </div>
+            <a href="{% url 'analytics:analysis' %}" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">
+                Open Analysis &rarr;
+            </a>
+        </div>
+        {% if dashboard_charts and dashboard_charts.primary_chart %}
+            <div class="h-64">
+                <canvas id="dashPrimaryChart"></canvas>
+            </div>
+        {% else %}
+            <div class="flex h-56 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center">
+                <div>
+                    <p class="text-sm font-medium text-slate-700">No dataset visualization available</p>
+                    <p class="mt-1 text-xs text-slate-500">Upload and map a CSV dataset to visualize trends or numerical distributions.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-base font-semibold text-slate-900">
+                    {% if dashboard_charts and dashboard_charts.secondary_chart %}{{ dashboard_charts.secondary_chart.title }}{% else %}Segment &amp; Feature Breakdown{% endif %}
+                </h3>
+                {% if dashboard_charts and dashboard_charts.secondary_chart %}
+                    <p class="text-xs text-slate-500">{{ dashboard_charts.secondary_chart.subtitle }}</p>
+                {% endif %}
+            </div>
+            <a href="{% url 'analytics:visualizations' %}" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">
+                Custom Charts &rarr;
+            </a>
+        </div>
+        {% if dashboard_charts and dashboard_charts.secondary_chart %}
+            <div class="h-64">
+                <canvas id="dashSecondaryChart"></canvas>
+            </div>
+        {% else %}
+            <div class="flex h-56 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center">
+                <div>
+                    <p class="text-sm font-medium text-slate-700">No categorical or feature summary yet</p>
+                    <p class="mt-1 text-xs text-slate-500">Group breakdowns and column summaries appear automatically after profiling.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Recent Experiments & Activity Row -->
+<section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-semibold text-slate-900">Recent Modeling &amp; Experiments</h3>
+            <a href="{% url 'forecasting:compare' %}" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">
+                Model Comparison
+            </a>
+        </div>
+        {% if recent_experiments %}
+            <ul class="divide-y divide-slate-100 text-sm">
+                {% for exp in recent_experiments %}
+                    <li class="py-3 flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <a href="{% url 'forecasting:detail' exp.pk %}" class="font-medium text-slate-900 hover:text-indigo-600 truncate block">
+                                {{ exp.get_model_name_display }} — {{ exp.dataset.name }}
+                            </a>
+                            <p class="text-xs text-slate-500">
+                                Target: {{ exp.target_metric }} ({{ exp.product_display }}) &bull; RMSE: {{ exp.rmse|floatformat:2|default:"—" }} &bull; MAE: {{ exp.mae|floatformat:2|default:"—" }}
+                            </p>
+                        </div>
+                        <span class="shrink-0 text-xs text-slate-400">{{ exp.created_at|date:"M d, H:i" }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center">
+                <p class="text-sm font-medium text-slate-700">No predictive models executed yet</p>
+                <p class="mt-1 text-xs text-slate-500">Run Forecasting or Experiment Lab protocols to compare MAE, RMSE, and MAPE here.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-semibold text-slate-900">Recent Activity</h3>
+            <span class="text-xs text-slate-500">Workspace audit log</span>
+        </div>
+        {% if recent_activity %}
+            <ul class="divide-y divide-slate-100 text-sm">
+                {% for item in recent_activity %}
+                    <li class="py-2.5 flex items-center justify-between gap-3">
+                        <span class="text-slate-700">{{ item.message }}</span>
+                        <span class="shrink-0 text-xs text-slate-400">{{ item.created_at|date:"M d, H:i" }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center">
+                <p class="text-sm font-medium text-slate-700">No recent workspace activity</p>
+                <p class="mt-1 text-xs text-slate-500">Dataset uploads, cleaning logs, model evaluations, and report exports will appear here.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ dashboard_charts|json_script:"dash-charts-data" }}
+<script>
+const dashData = JSON.parse(document.getElementById('dash-charts-data').textContent);
+if (dashData && typeof Chart !== 'undefined') {
+    const p = dashData.primary_chart;
+    const pCanvas = document.getElementById('dashPrimaryChart');
+    if (p && pCanvas) {
+        new Chart(pCanvas, {
+            type: p.type,
+            data: {
+                labels: p.labels,
+                datasets: [{
+                    label: p.series_label,
+                    data: p.values,
+                    borderColor: '#4f46e5',
+                    backgroundColor: p.type === 'line' ? 'rgba(79, 70, 229, 0.08)' : '#4f46e5',
+                    fill: p.type === 'line',
+                    tension: 0.25,
+                    pointRadius: 1.5,
+                    borderRadius: p.type === 'bar' ? 5 : 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { x: { ticks: { maxTicksLimit: 8 } } }
+            }
+        });
+    }
+
+    const s = dashData.secondary_chart;
+    const sCanvas = document.getElementById('dashSecondaryChart');
+    if (s && sCanvas) {
+        new Chart(sCanvas, {
+            type: s.type,
+            data: {
+                labels: s.labels,
+                datasets: [{
+                    label: s.series_label,
+                    data: s.values,
+                    backgroundColor: '#6366f1',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

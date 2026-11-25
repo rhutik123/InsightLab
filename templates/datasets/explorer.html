@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Data Explorer — InsightLab{% endblock %}
+{% block page_heading %}Data Explorer{% endblock %}
+
+{% block content %}
+{% if not datasets %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
+    <h3 class="text-base font-semibold text-slate-900">No mapped datasets available</h3>
+    <p class="mt-1 text-sm text-slate-600">Upload and configure a CSV dataset to explore its columns and records.</p>
+    <a href="{% url 'datasets:upload' %}"
+       class="mt-5 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+        Upload CSV Dataset
+    </a>
+</div>
+{% else %}
+<form method="get" class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-4 items-end">
+        <div>
+            <label for="id_dataset" class="block text-xs font-medium text-slate-600 mb-1">Dataset</label>
+            <select id="id_dataset" name="dataset"
+                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+                {% for ds in datasets %}
+                    <option value="{{ ds.pk }}" {% if selected_dataset.pk == ds.pk %}selected{% endif %}>{{ ds.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label for="id_version" class="block text-xs font-medium text-slate-600 mb-1">Version</label>
+            <select id="id_version" name="version"
+                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+                <option value="cleaned" {% if selected_version == 'cleaned' %}selected{% endif %}>Cleaned (if available)</option>
+                <option value="original" {% if selected_version == 'original' %}selected{% endif %}>Original Uploaded</option>
+            </select>
+        </div>
+
+        <div>
+            <label for="id_search" class="block text-xs font-medium text-slate-600 mb-1">Search / Filter Rows</label>
+            <input id="id_search" type="text" name="q" value="{{ search_query }}" placeholder="Search any value..."
+                   class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+        </div>
+
+        <div>
+            <button type="submit"
+                    class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                Inspect Records
+            </button>
+        </div>
+    </div>
+</form>
+
+{% if explorer %}
+<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs mb-6">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <h3 class="text-base font-semibold text-slate-900">Column Schema &amp; Summary</h3>
+        <span class="text-xs text-slate-500">
+            Showing {{ explorer.filtered_rows }} matching row(s) out of {{ explorer.total_rows }} ({{ explorer.used_version }} version)
+        </span>
+    </div>
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {% for col in explorer.col_meta %}
+        <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 text-xs">
+            <div class="flex items-center justify-between gap-2">
+                <span class="font-semibold text-slate-900 truncate">{{ col.name }}</span>
+                <span class="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-indigo-700">{{ col.type }}</span>
+            </div>
+            <p class="mt-1.5 text-slate-600">Unique: <strong>{{ col.unique }}</strong> &bull; Missing: <strong>{{ col.missing }}</strong></p>
+            {% if col.numeric_stats %}
+                <p class="mt-1 text-slate-500">Mean: {{ col.numeric_stats.mean|default:"—" }} &bull; Range: {{ col.numeric_stats.min|default:"—" }}–{{ col.numeric_stats.max|default:"—" }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+    <h3 class="text-base font-semibold text-slate-900 mb-3">Records Table (Up to 50 Rows)</h3>
+    <div class="overflow-x-auto rounded-xl border border-slate-200">
+        <table class="min-w-full divide-y divide-slate-200 text-xs">
+            <thead class="bg-slate-50 text-left font-semibold text-slate-600">
+                <tr>
+                    {% for col in explorer.columns %}
+                        <th class="px-3 py-2 whitespace-nowrap">{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for row in explorer.preview_rows %}
+                <tr class="hover:bg-slate-50">
+                    {% for col, val in row.items %}
+                        <td class="px-3 py-2 text-slate-700 whitespace-nowrap">{{ val }}</td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{{ explorer.columns|length }}" class="px-3 py-6 text-center text-slate-500">
+                        No rows matched your search query.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

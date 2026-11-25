@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}My Datasets — InsightLab{% endblock %}
+{% block page_heading %}My Datasets{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <h2 class="text-base font-semibold text-slate-900">Uploaded CSV Datasets</h2>
+        <p class="text-sm text-slate-600">Upload any structured CSV dataset (sales, web traffic, expenses, inventory, or custom metrics) for profiling and analysis.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+        <a href="{% url 'datasets:sample_csv' %}?type=sales"
+           class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">
+            Sample Sales CSV
+        </a>
+        <a href="{% url 'datasets:sample_csv' %}?type=traffic"
+           class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">
+            Sample Traffic CSV
+        </a>
+        <a href="{% url 'datasets:sample_csv' %}?type=expenses"
+           class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">
+            Sample Expenses CSV
+        </a>
+        <a href="{% url 'datasets:upload' %}"
+           class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-indigo-700">
+            + Upload CSV
+        </a>
+    </div>
+</div>
+
+{% if datasets %}
+<div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <tr>
+                    <th class="px-5 py-3.5">Dataset</th>
+                    <th class="px-5 py-3.5">Domain</th>
+                    <th class="px-5 py-3.5">Shape &amp; Schema</th>
+                    <th class="px-5 py-3.5">Date Range</th>
+                    <th class="px-5 py-3.5">Status</th>
+                    <th class="px-5 py-3.5 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for ds in datasets %}
+                {% with prof=ds.active_profile %}
+                <tr class="hover:bg-slate-50/70">
+                    <td class="px-5 py-4">
+                        <a href="{% url 'datasets:detail' ds.pk %}" class="font-semibold text-slate-900 hover:text-indigo-600">
+                            {{ ds.name }}
+                        </a>
+                        {% if ds.description %}
+                            <p class="mt-0.5 text-xs text-slate-500 line-clamp-1">{{ ds.description }}</p>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-4 text-xs text-slate-600">
+                        <span class="inline-flex rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-700">
+                            {{ ds.get_dataset_type_display }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-4 text-slate-600 text-xs">
+                        {% if ds.is_mapped %}
+                            <span>{{ prof.row_count|default:0 }} rows &times; {{ prof.col_count|default:0 }} cols</span>
+                            {% if prof.primary_target_column %}
+                                <span class="block text-slate-400">Target: {{ prof.primary_target_column }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-amber-700">Pending schema setup</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-4 text-xs text-slate-600">
+                        {% if ds.is_mapped and prof.date_min %}
+                            {{ prof.date_min }} to {{ prof.date_max }}
+                        {% elif ds.is_mapped %}
+                            <span class="text-slate-400">Non-time-series</span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-4">
+                        <div class="flex flex-wrap gap-1.5">
+                            {% if not ds.is_mapped %}
+                                <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">Needs Mapping</span>
+                            {% else %}
+                                <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Profiled</span>
+                            {% endif %}
+                            {% if ds.has_cleaned_version %}
+                                <span class="inline-flex rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">Cleaned</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="px-5 py-4 text-right">
+                        <div class="inline-flex items-center gap-2">
+                            {% if ds.is_mapped %}
+                                <a href="{% url 'datasets:detail' ds.pk %}"
+                                   class="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">
+                                    Profile
+                                </a>
+                                <a href="{% url 'datasets:explorer' %}?dataset={{ ds.pk }}"
+                                   class="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">
+                                    Explore
+                                </a>
+                            {% else %}
+                                <a href="{% url 'datasets:map_columns' ds.pk %}"
+                                   class="rounded-md bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700">
+                                    Map Schema
+                                </a>
+                            {% endif %}
+                            <form method="post" action="{% url 'datasets:delete' ds.pk %}"
+                                  onsubmit="return confirm('Delete dataset {{ ds.name|escapejs }}?');">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endwith %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
+    <h3 class="text-base font-semibold text-slate-900">No datasets uploaded yet</h3>
+    <p class="mt-1 text-sm text-slate-600 max-w-lg mx-auto">
+        Upload any structured CSV file (at least 2 columns), or download one of our synthetic demonstration datasets below to explore InsightLab.
+    </p>
+    <div class="mt-6 flex flex-wrap justify-center gap-2.5">
+        <a href="{% url 'datasets:upload' %}"
+           class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+            Upload your first CSV
+        </a>
+        <a href="{% url 'datasets:sample_csv' %}?type=traffic"
+           class="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            Sample Web Traffic CSV
+        </a>
+        <a href="{% url 'datasets:sample_csv' %}?type=expenses"
+           class="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            Sample Expenses CSV
+        </a>
+        <a href="{% url 'datasets:sample_csv' %}?type=sales"
+           class="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            Sample Sales CSV
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
